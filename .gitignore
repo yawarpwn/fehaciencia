@@ -1,0 +1,31 @@
+# Variables de entorno (nunca al repo)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ruff_cache/
+
+# SQLite (la base de datos real no va al repo)
+*.db
+*.db-shm
+*.db-wal
+
+# Node
+node_modules/
+.svelte-kit/
+build/
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+#datos locales de la app
+api/tmp/

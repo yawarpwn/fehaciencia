@@ -1,0 +1,27 @@
+services:
+  telldocs:
+    build: .
+    container_name: telldocs
+    ports:
+      - "8000:8000"
+    volumes:
+      # Lado izquierdo: tu disco real. Hoy es esta carpeta del proyecto.
+      # En la Pi, cambiás SOLO esto para apuntar a tu SSD, ej:
+      #   - /srv/dev-disk-by-uuid-aee6ff95-7ca3-41f4-9017-30f357457d28/docscan:/data/docs
+      - ./storage_data:/data/docs
+    environment:
+      - STORAGE_PATH=/data/docs
+      - MAX_FILE_SIZE_MB=20
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
