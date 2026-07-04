@@ -4,6 +4,11 @@ from enum import Enum
 from datetime import date
 from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import event
+
+
+def utc_now():
+    return datetime.now(UTC)
 
 
 class CurrencyType(str, Enum):
@@ -32,7 +37,12 @@ class AssetType(str, Enum):
     CREDIT_NOTE_XML = "CREDIT_NOTE_XML"
 
 
-class SalesInvoice(SQLModel, table=True):
+class TimestampModel(SQLModel):
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime | None = Field(default=None)
+
+
+class SalesInvoice(TimestampModel, table=True):
     __tablename__: str = "sales_invoices"  # type: ignore
 
     # Definimos el ID como UUID, por defecto genera uno nuevo automáticamente
@@ -48,10 +58,10 @@ class SalesInvoice(SQLModel, table=True):
     customer_name: str  # "COMIN S.A.C."
     currency: CurrencyType  # "PEN" o "USD"
     total_amount: float
-    is_credit: int = Field(default=0)  # 0 = Contado, 1 = Crédito
     status: str = Field(default="ACTIVE")  # "ACTIVE" o "VOIDED"
     local_path: str  # "COMPROBANTES/2026/06/VENTAS/E001-1768/"
-    cf_synced: int = Field(default=0)  # 0 = No sincronizado, 1 = Sincronizado
+    is_advance: bool
+    # cf_synced: int = Field(default=0)  # 0 = No sincronizado, 1 = Sincronizado
 
     # Relación inversa: Si borras una factura, elimina automáticamente sus documentos adjuntos
     documents: List["SupportingDocument"] = Relationship(
@@ -60,21 +70,20 @@ class SalesInvoice(SQLModel, table=True):
     )
 
 
-class SupportingDocument(SQLModel, table=True):
+@event.listens_for(SalesInvoice, "before_update", propagate=True)
+def update_timestamp(mapper, connection, target):
+    target.updated_at = utc_now()
+
+
+class SupportingDocument(TimestampModel, table=True):
     __tablename__: str = "supporting_documents"  # type: ignore
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
 
     # Llave foránea vinculada al UUID de la tabla de facturas
     invoice_id: str = Field(foreign_key="sales_invoices.id")
-
     document_type: AssetType  # "XML", "PDF", "DELIVERY_GUIDE", "PHOTO", etc.
     file_name: str  # "E001-1768.xml", "foto_letrero.jpg"
-
-    # Guarda la fecha y hora exacta de la carga en formato ISO/Texto
-    uploaded_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    )
 
     # Relación para acceder al objeto factura directamente desde el documento
     invoice: SalesInvoice = Relationship(back_populates="documents")

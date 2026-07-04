@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { PageProps } from './$types';
+	import DataTable from './data-table.svelte';
+	import { columns } from './columns.js';
 
-	let { data }: PageProps = $props();
+	let { data } = $props();
 </script>
 
-<pre>
-  {JSON.stringify(data.invoices, null, 2)}
-</pre>
+<DataTable data={data.invoices} {columns} />
