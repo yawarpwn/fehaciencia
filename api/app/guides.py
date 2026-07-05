@@ -33,7 +33,8 @@ def main():
                 for aditional_reference in aditional_references:
                     stmt = select(SalesInvoice).where(
                         SalesInvoice.serie == aditional_reference.split("-")[0],
-                        SalesInvoice.number == int(aditional_reference.split("-")[1]),
+                        SalesInvoice.sequential_number
+                        == int(aditional_reference.split("-")[1]),
                     )
 
                     invoice = session.exec(stmt).first()
@@ -46,7 +47,7 @@ def main():
                     session.commit()
 
                     print(
-                        f"  ✅ {invoice.serie}-{invoice.number:04d} procesada correctamente"
+                        f"  ✅ {invoice.serie}-{invoice.sequential_number:04d} procesada correctamente"
                     )
             except Exception as e:
                 print(f"Error al procesar {credit_note_path}: {e}")

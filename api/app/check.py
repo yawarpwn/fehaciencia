@@ -51,7 +51,7 @@ def main():
 
                 stmt = select(SalesInvoice).where(
                     SalesInvoice.serie == data["serie"],
-                    SalesInvoice.number == data["number"],
+                    SalesInvoice.sequential_number == data["number"],
                 )
 
                 invoice = session.exec(stmt).first()

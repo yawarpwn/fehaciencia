@@ -14,7 +14,7 @@ class SaleInvoiceService:
         return (
             select(SalesInvoice)
             .options(selectinload(SalesInvoice.documents))
-            .order_by(SalesInvoice.period.desc(), SalesInvoice.number.desc())
+            .order_by(SalesInvoice.period.desc(), SalesInvoice.sequential_number.desc())
         )
 
     def get_all(self) -> list[SalesInvoiceOut]:
@@ -29,7 +29,7 @@ class SaleInvoiceService:
 
     def find_by_serie_and_number(self, serie: str, number: int):
         stqm = select(SalesInvoice).where(
-            SalesInvoice.serie == serie, SalesInvoice.number == number
+            SalesInvoice.serie == serie, SalesInvoice.sequential_number == number
         )
         invoice = self.session.exec(stqm).first()
 

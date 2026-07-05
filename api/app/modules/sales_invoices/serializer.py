@@ -47,7 +47,7 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
 
     return SalesInvoiceOut(
         id=invoice.id,
-        invoiceCode=f"{invoice.serie}-{invoice.number:04d}",
+        invoiceId=invoice.invoice_id,
         period=invoice.period,
         status=result.status,
         customerRuc=invoice.customer_ruc,

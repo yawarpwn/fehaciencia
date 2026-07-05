@@ -1,7 +1,8 @@
 # app/sales_invoices/schemas.py
 from datetime import date
 from pydantic import BaseModel, computed_field
-from .model import CurrencyType, InvoiceStatus
+from .model import CurrencyType
+from .document_rules import InvoiceStatus
 
 
 # ── Documentos ────────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ class SalesInvoiceCreate(BaseModel):
     total_amount: float
     local_path: str
     is_advance: bool = False
-    status: InvoiceStatus = InvoiceStatus.ACTIVE
+    status: InvoiceStatus = InvoiceStatus.INCOMPLETE
 
 
 # ── Factura: salida (shape que espera el frontend) ────────────────────────────
@@ -41,7 +42,7 @@ class SalesInvoiceCreate(BaseModel):
 
 class SalesInvoiceOut(BaseModel):
     id: str
-    invoiceCode: str
+    invoiceId: str
     period: str
     status: str
     customerRuc: str

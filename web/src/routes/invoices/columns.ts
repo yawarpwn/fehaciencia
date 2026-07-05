@@ -4,20 +4,18 @@ import { createRawSnippet } from 'svelte';
 import { renderComponent, renderSnippet } from '$lib/components/ui/data-table/index.js';
 import DataTableAction from './data-table-action.svelte';
 import SingleDocStatus from '$lib/components/single-doc-status.svelte';
-import PhotoThumbnails from '@/components/photo-thumbnails.svelte';
-import ImageOffIcon from '@lucide/svelte/icons/image-off';
 import MultiDocThumbnails from '@/components/multi-doc-thumbnails.svelte';
-import ReceiptIcon from '@lucide/svelte/icons/receipt';
-import { SINGLE_DOC_META, SINGLE_DOC_ORDER, MULTI_DOC_META, MULTI_DOC_ORDER } from '$lib/constants';
-import type { InvoiceDocument, InvoiceStatus, SaleInvoice } from '$lib/types';
+import { MULTI_DOC_META, MULTI_DOC_ORDER } from '$lib/constants';
+import type { InvoiceStatus, SaleInvoice } from '$lib/types';
 import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
+import FileText from '@lucide/svelte/icons/file';
 
 const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
 
 export const columns: ColumnDef<SaleInvoice>[] = [
 	{
 		header: 'Factura',
-		accessorKey: 'invoiceCode'
+		accessorKey: 'invoiceId'
 	},
 	{
 		accessorKey: 'period',
@@ -35,13 +33,26 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		header: 'Cliente'
 	},
 	{
+		id: 'total',
+		header: 'Monto',
+		cell: ({ row }) => {
+			const amountCellSnippet = createRawSnippet<[{ amount: number }]>((getAmount) => {
+				const { amount } = getAmount();
+				return {
+					render: () => `<div class="text-end font-medium">${formatter.format(amount)}</div>`
+				};
+			});
+			return renderSnippet(amountCellSnippet, { amount: row.original.totalAmount });
+		}
+	},
+	{
 		id: 'Factura',
 		header: 'FA',
 		cell: ({ row }) => {
 			return renderComponent(SingleDocStatus, {
 				document: row.original.pdfFile,
 				label: 'mee',
-				icon: ReceiptIcon
+				icon: FileText
 			});
 		}
 	},
@@ -78,19 +89,6 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 			});
 		}
 	})),
-	{
-		id: 'total',
-		header: 'Monto',
-		cell: ({ row }) => {
-			const amountCellSnippet = createRawSnippet<[{ amount: number }]>((getAmount) => {
-				const { amount } = getAmount();
-				return {
-					render: () => `<div class="text-end font-medium">${formatter.format(amount)}</div>`
-				};
-			});
-			return renderSnippet(amountCellSnippet, { amount: row.original.totalAmount });
-		}
-	},
 	{
 		id: 'status',
 		header: 'Estado',

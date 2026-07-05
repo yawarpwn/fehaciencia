@@ -1,6 +1,4 @@
-# app/sales_invoices/seed.py
 import mimetypes
-import uuid
 import zipfile
 import shutil
 import re
@@ -15,13 +13,18 @@ from app.modules.sales_invoices.model import (
     SupportingDocument,
     DocumentType,
 )
+from app.scripts.helpers import (
+    get_text,
+    find_all,
+    is_prepayment_invoice,
+    make_document,
+    detect_mime_type,
+    generate_unique_filename,
+    store_file,
+    find_all_by_pattern,
+)
 from app.config import STORAGE_PATH
 
-NAMESPACES = {
-    "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-    "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
-    "ext": "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
-}
 
 MONTHS = {
     1: "ENERO",
@@ -37,62 +40,6 @@ MONTHS = {
     11: "NOVIEMBRE",
     12: "DICIEMBRE",
 }
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def get_text(root: ET.Element, tag: str) -> str | None:
-    node = root.find(tag, NAMESPACES)
-    return node.text.strip() if node is not None and node.text else None
-
-
-def find_all(root: ET.Element, tag: str) -> list[str]:
-    node = root.findall(tag, NAMESPACES)
-    return [n.text.strip() for n in node]
-
-
-def find_all_by_pattern(files: list[str], pattern: str) -> list[str]:
-    regex = re.compile(pattern, re.IGNORECASE)
-    return [f for f in files if regex.match(f)]
-
-
-def generate_unique_filename(original_name: str, doc_type: DocumentType) -> str:
-    ext = Path(original_name).suffix
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    return f"{doc_type.value.lower()}_{timestamp}{ext}"
-
-
-def detect_mime_type(file_path: Path) -> str:
-    mime, _ = mimetypes.guess_type(file_path.name)
-    return mime or "application/octet-stream"
-
-
-def store_file(source: Path, target_dir: Path, target_name: str) -> Path:
-    """Copia el archivo al directorio de destino y devuelve la ruta destino."""
-    target_dir.mkdir(parents=True, exist_ok=True)
-    destination = target_dir / target_name
-    shutil.copy2(source, destination)
-    return destination
-
-
-def make_document(
-    invoice_id: str,
-    doc_type: DocumentType,
-    source_path: Path,
-    stored_path: Path,
-) -> SupportingDocument:
-    """Construye un SupportingDocument con todos los campos requeridos."""
-    relative_path = stored_path.relative_to(STORAGE_PATH)
-    return SupportingDocument(
-        id=str(uuid.uuid4()),
-        invoice_id=invoice_id,
-        document_type=doc_type,
-        file_name=stored_path.name,
-        file_path=str(relative_path),  # relativo a STORAGE_PATH
-        mime_type=detect_mime_type(source_path),
-        file_size=source_path.stat().st_size,
-    )
 
 
 # ── XML parsing ───────────────────────────────────────────────────────────────
@@ -118,14 +65,19 @@ def parse_xml_data(xml_content: bytes) -> dict:
 
     serie, number = raw["full_id"].split("-")
 
-    payment_means = root.find("cac:PaymentTerms/cbc:PaymentMeansID", NAMESPACES)
-    is_advance = (
-        payment_means is not None
-        and payment_means.text is not None
-        and payment_means.text.strip().lower() == "credito"
-    )
+    is_advance = is_prepayment_invoice(root)
+
+    # detecta que la factura es a credito
+    # payment_means = root.find("cac:PaymentTerms/cbc:PaymentMeansID", NAMESPACES)
+
+    # is_advance = (
+    #     payment_means is not None
+    #     and payment_means.text is not None
+    #     and payment_means.text.strip().lower() == "credito"
+    # )
 
     return {
+        "invoice_id": raw["full_id"],
         "serie": serie,
         "number": int(number),
         "currency": raw["currency"],
@@ -163,13 +115,14 @@ SUNAT_TYPES = {
     DocumentType.CREDIT_NOTE_XML,
     DocumentType.CREDIT_NOTE_PDF,
     DocumentType.CREDIT_NOTE_ZIP,
+    DocumentType.DELIVERY_GUIDE_PDF,
 }
 
 
 def build_patterns(serie: str, number: int, ruc: str) -> dict[DocumentType, str]:
     return {
         DocumentType.INVOICE_PDF: rf"^PDF-DOC-{serie}-?{number}{ruc}\.pdf$",
-        DocumentType.DELIVERY_GUIDE: rf"^{ruc}-09-.*\.pdf$",
+        DocumentType.DELIVERY_GUIDE_PDF: rf"^(?:{ruc}-09-.*|GR-\d+)\.pdf$",
         DocumentType.DELIVERY_GUIDE_XML: rf"^{ruc}-09-.*\.xml$",
         DocumentType.PURCHASE_ORDER: rf"^OC-{number}\.(pdf|jpg|jpeg|png)$",
         DocumentType.DELIVERY_GUIDE_SIGNED:  # antes SIGNED_SHIPPING_RECEIPT
@@ -211,10 +164,11 @@ def main():
 
                 # 1. Registrar la factura
                 invoice = SalesInvoice(
+                    invoice_id=invoice_data["invoice_id"],
                     local_path=local_path,
                     period=invoice_data["period"],
                     serie=serie,
-                    number=number,
+                    sequential_number=number,
                     issue_date=issue_date,
                     customer_ruc=invoice_data["customer_ruc"],
                     customer_name=invoice_data["customer_name"],

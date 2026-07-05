@@ -1,4 +1,3 @@
-# app/sales_invoices/document_rules.py
 from dataclasses import dataclass
 from enum import Enum
 
@@ -36,20 +35,20 @@ def compute_missing(
 
     if requires_fehaciencia:
         if "DELIVERY_GUIDE" not in present_types:
-            missing.append("Guía de remisión")
+            missing.append("Guía Remisión")
 
         # Si es envío por agencia, la guía firmada NO es obligatoria
         if not is_agency_shipment and "DELIVERY_GUIDE_SIGNED" not in present_types:
-            missing.append("Guía de remisión firmada")
+            missing.append("Guía firmada")
 
         if "PHOTO" not in present_types:
-            missing.append("Fotos de entrega")
+            missing.append("Fotos")
 
         if "PAYMENT_VOUCHER" not in present_types:
-            missing.append("Voucher de depósito")
+            missing.append("Depósito")
 
     if is_agency_shipment and "AGENCY_GUIDE" not in present_types:
-        missing.append("Guía de agencia")
+        missing.append("Guía Agencia")
 
     status = InvoiceStatus.COMPLETE if len(missing) == 0 else InvoiceStatus.INCOMPLETE
 

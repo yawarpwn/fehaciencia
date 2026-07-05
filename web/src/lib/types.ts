@@ -26,7 +26,7 @@ export type InvoiceDocument = {
 
 export type SaleInvoice = {
 	id: string;
-	invoiceCode: string; // "E001-1341" — armado en el backend
+	invoiceId: string; // "E001-1341" — armado en el backend
 	period: string; // "202601"
 	status: InvoiceStatus;
 	customerRuc: string;
@@ -39,6 +39,7 @@ export type SaleInvoice = {
 	isVoided: boolean;
 
 	// Documentos únicos
+	pdfFile: InvoiceDocument;
 	purchaseOrder: InvoiceDocument | null;
 	deliveryGuides: InvoiceDocument[];
 	agencyGuides: InvoiceDocument[];

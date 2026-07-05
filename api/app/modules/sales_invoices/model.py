@@ -16,11 +16,6 @@ class CurrencyType(str, Enum):
     USD = "USD"
 
 
-class InvoiceStatus(str, Enum):
-    ACTIVE = "ACTIVE"
-    VOIDED = "VOIDED"
-
-
 # app/sales_invoices/models.py
 class DocumentType(str, Enum):
     # Documentos SUNAT (técnicos, generados automáticamente)
@@ -34,7 +29,7 @@ class DocumentType(str, Enum):
 
     # Documentos de fehaciencia (sube el usuario)
     PURCHASE_ORDER = "PURCHASE_ORDER"
-    DELIVERY_GUIDE = "DELIVERY_GUIDE"  # PDF guía de remisión SUNAT
+    DELIVERY_GUIDE_PDF = "DELIVERY_GUIDE"  # PDF guía de remisión SUNAT
     AGENCY_GUIDE = "AGENCY_GUIDE"  # antes CARRIER_RECEIPT
     DELIVERY_GUIDE_SIGNED = "DELIVERY_GUIDE_SIGNED"  # antes SIGNED_SHIPPING_RECEIPT
     PHOTO = "PHOTO"
@@ -54,9 +49,9 @@ class SalesInvoice(TimestampMixin, table=True):
     )
     period: str = Field(index=True)  # "202606"
     serie: str  # "E001"
-    number: int  # 1768
+    invoice_id: str = Field(index=True, unique=True)
+    sequential_number: int  # 1768
     issue_date: date
-    status: InvoiceStatus = Field(default=InvoiceStatus.ACTIVE)
     customer_ruc: str = Field(index=True)
     customer_name: str
     currency: CurrencyType = Field(default=CurrencyType.PEN)
