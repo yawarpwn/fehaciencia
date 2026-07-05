@@ -50,36 +50,37 @@ async function fetchInvoices(): Promise<SaleInvoice[]> {
 	const res = await fetch('http://localhost:8000/sales-invoices');
 	const data = await res.json();
 
-	const sorted = data.reverse();
-
-	const mappedInvoices = sorted.map((invoice: any) => {
-		return {
-			id: invoice.id,
-			amount: invoice.amount,
-			status: invoice.status,
-			customerRuc: invoice.customer_ruc,
-			customerName: invoice.customer_name,
-			customerShortName: ellipsisName(invoice.customer_name),
-			number: invoice.number,
-			serie: invoice.serie,
-			totalAmount: invoice.total_amount,
-			issueDate: invoice.issue_date,
-			documents: invoice.documents.map((doc: any) => ({
-				id: doc.id,
-				documentType: doc.document_type,
-				fileName: doc.file_name,
-				uploadedAt: doc.uploaded_at
-			})),
-			missingDocuments: invoice.missing_documents ?? [],
-			isComplete: invoice.is_complete ?? invoice.documents.length > 0
-		};
-	});
-
-	return mappedInvoices;
+	// const sorted = data.reverse();
+	//
+	// const mappedInvoices = sorted.map((invoice: any) => {
+	// 	return {
+	// 		id: invoice.id,
+	// 		amount: invoice.amount,
+	// 		status: invoice.status,
+	// 		customerRuc: invoice.customer_ruc,
+	// 		customerName: invoice.customer_name,
+	// 		customerShortName: ellipsisName(invoice.customer_name),
+	// 		number: invoice.number,
+	// 		serie: invoice.serie,
+	// 		totalAmount: invoice.total_amount,
+	// 		issueDate: invoice.issue_date,
+	// 		documents: invoice.documents.map((doc: any) => ({
+	// 			id: doc.id,
+	// 			documentType: doc.document_type,
+	// 			fileName: doc.file_name,
+	// 			uploadedAt: doc.uploaded_at
+	// 		})),
+	// 		missingDocuments: invoice.missing_documents ?? [],
+	// 		isComplete: invoice.is_complete ?? invoice.documents.length > 0
+	// 	};
+	// });
+	//
+	return data;
 }
 export async function load() {
 	// logic to fetch payments data here
+	const invoices = await fetchInvoices();
 	return {
-		invoices: mockInvoices
+		invoices
 	};
 }

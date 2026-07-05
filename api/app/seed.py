@@ -1,3 +1,6 @@
+# app/sales_invoices/seed.py
+import mimetypes
+import uuid
 import zipfile
 import shutil
 import re
@@ -7,7 +10,11 @@ from datetime import datetime, date
 from sqlmodel import Session
 
 from app.core.database import engine
-from app.sales_invoices.model import SalesInvoice, SupportingDocument, AssetType
+from app.modules.sales_invoices.model import (
+    SalesInvoice,
+    SupportingDocument,
+    DocumentType,
+)
 from app.config import STORAGE_PATH
 
 NAMESPACES = {
@@ -16,93 +23,7 @@ NAMESPACES = {
     "ext": "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
 }
 
-
-def get_text(root: ET.Element, tag: str) -> str | None:
-    node = root.find(tag, NAMESPACES)
-    return node.text.strip() if node is not None and node.text else None
-
-
-def find_all_by_pattern(files: list[str], pattern_str: str) -> list[str]:
-    """Busca TODOS los archivos que hagan match con la expresión regular (Case Insensitive)."""
-    regex = re.compile(pattern_str, re.I)
-    return [f for f in files if regex.match(f)]
-
-
-def generate_unique_filename(original_name: str, asset_type: AssetType) -> str:
-    """Genera un nombre único con timestamp preciso para evitar superposiciones en el almacenamiento."""
-    ext = Path(original_name).suffix
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    return f"{asset_type.value.lower()}_{timestamp}{ext}"
-
-
-def parse_xml_data(xml_content: bytes) -> dict:
-    root = ET.fromstring(xml_content)
-
-    xml_mapping = {
-        "full_id": "cbc:ID",
-        "issue_date": "cbc:IssueDate",
-        "customer_ruc": "cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID",
-        "customer_name": "cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName",
-        "currency": "cbc:DocumentCurrencyCode",
-        "total_amount": "cac:LegalMonetaryTotal/cbc:PayableAmount",
-    }
-
-    raw_data = {key: get_text(root, path) for key, path in xml_mapping.items()}
-
-    if not all(raw_data.values()):
-        missing = [k for k, v in raw_data.items() if v is None]
-        raise ValueError(f"Campos obligatorios ausentes en el XML: {missing}")
-
-    assert raw_data["full_id"] is not None
-    assert raw_data["issue_date"] is not None
-
-    serie, number = raw_data["full_id"].split("-")
-
-    payment_means = root.find("cac:PaymentTerms/cbc:PaymentMeansID", NAMESPACES)
-    is_credit = (
-        1
-        if payment_means is not None and payment_means.text.strip().lower() == "credito"
-        else 0
-    )
-
-    return {
-        "serie": serie,
-        "number": int(number),
-        "currency": raw_data["currency"],
-        "period": raw_data["issue_date"].replace("-", "")[:6],
-        "total_amount": float(raw_data["total_amount"]),
-        "issue_date": date.fromisoformat(raw_data["issue_date"]),
-        "customer_ruc": raw_data["customer_ruc"],
-        "customer_name": raw_data["customer_name"],
-        "is_credit": is_credit,
-    }
-
-
-def process_zip_invoice(zip_path: Path) -> dict:
-    if not zipfile.is_zipfile(zip_path):
-        raise ValueError(f"❌ {zip_path.name} no es un ZIP válido")
-
-    with zipfile.ZipFile(zip_path, "r") as z:
-        xml_file_name = next(
-            (f for f in z.namelist() if f.lower().endswith(".xml")), None
-        )
-        if not xml_file_name:
-            raise ValueError(f"❌ No se encontró archivo XML dentro de {zip_path.name}")
-
-        xml_content = z.read(xml_file_name)
-        return parse_xml_data(xml_content)
-
-
-def storage_file(file_path: Path, target_dir: Path, unique_name: str) -> Path:
-    target_dir.mkdir(parents=True, exist_ok=True)
-    destination = target_dir / unique_name
-    shutil.copy2(file_path, destination)
-    return destination
-
-
-# --- 3. Flujo Ejecutable Principal ---
-#
-MOUNTS = {
+MONTHS = {
     1: "ENERO",
     2: "FEBRERO",
     3: "MARZO",
@@ -118,35 +39,177 @@ MOUNTS = {
 }
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def get_text(root: ET.Element, tag: str) -> str | None:
+    node = root.find(tag, NAMESPACES)
+    return node.text.strip() if node is not None and node.text else None
+
+
+def find_all(root: ET.Element, tag: str) -> list[str]:
+    node = root.findall(tag, NAMESPACES)
+    return [n.text.strip() for n in node]
+
+
+def find_all_by_pattern(files: list[str], pattern: str) -> list[str]:
+    regex = re.compile(pattern, re.IGNORECASE)
+    return [f for f in files if regex.match(f)]
+
+
+def generate_unique_filename(original_name: str, doc_type: DocumentType) -> str:
+    ext = Path(original_name).suffix
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return f"{doc_type.value.lower()}_{timestamp}{ext}"
+
+
+def detect_mime_type(file_path: Path) -> str:
+    mime, _ = mimetypes.guess_type(file_path.name)
+    return mime or "application/octet-stream"
+
+
+def store_file(source: Path, target_dir: Path, target_name: str) -> Path:
+    """Copia el archivo al directorio de destino y devuelve la ruta destino."""
+    target_dir.mkdir(parents=True, exist_ok=True)
+    destination = target_dir / target_name
+    shutil.copy2(source, destination)
+    return destination
+
+
+def make_document(
+    invoice_id: str,
+    doc_type: DocumentType,
+    source_path: Path,
+    stored_path: Path,
+) -> SupportingDocument:
+    """Construye un SupportingDocument con todos los campos requeridos."""
+    relative_path = stored_path.relative_to(STORAGE_PATH)
+    return SupportingDocument(
+        id=str(uuid.uuid4()),
+        invoice_id=invoice_id,
+        document_type=doc_type,
+        file_name=stored_path.name,
+        file_path=str(relative_path),  # relativo a STORAGE_PATH
+        mime_type=detect_mime_type(source_path),
+        file_size=source_path.stat().st_size,
+    )
+
+
+# ── XML parsing ───────────────────────────────────────────────────────────────
+
+
+def parse_xml_data(xml_content: bytes) -> dict:
+    root = ET.fromstring(xml_content)
+
+    mapping = {
+        "full_id": "cbc:ID",
+        "issue_date": "cbc:IssueDate",
+        "customer_ruc": "cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID",
+        "customer_name": "cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName",
+        "currency": "cbc:DocumentCurrencyCode",
+        "total_amount": "cac:LegalMonetaryTotal/cbc:PayableAmount",
+    }
+
+    raw = {key: get_text(root, path) for key, path in mapping.items()}
+
+    missing_fields = [k for k, v in raw.items() if v is None]
+    if missing_fields:
+        raise ValueError(f"Campos obligatorios ausentes en XML: {missing_fields}")
+
+    serie, number = raw["full_id"].split("-")
+
+    payment_means = root.find("cac:PaymentTerms/cbc:PaymentMeansID", NAMESPACES)
+    is_advance = (
+        payment_means is not None
+        and payment_means.text is not None
+        and payment_means.text.strip().lower() == "credito"
+    )
+
+    return {
+        "serie": serie,
+        "number": int(number),
+        "currency": raw["currency"],
+        "period": raw["issue_date"].replace("-", "")[:6],
+        "total_amount": float(raw["total_amount"]),
+        "issue_date": date.fromisoformat(raw["issue_date"]),
+        "customer_ruc": raw["customer_ruc"],
+        "customer_name": raw["customer_name"],
+        "is_advance": is_advance,
+    }
+
+
+def parse_zip_invoice(zip_path: Path) -> dict:
+    if not zipfile.is_zipfile(zip_path):
+        raise ValueError(f"{zip_path.name} no es un ZIP válido")
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        xml_name = next((f for f in z.namelist() if f.lower().endswith(".xml")), None)
+        if not xml_name:
+            raise ValueError(f"No se encontró XML dentro de {zip_path.name}")
+        return parse_xml_data(z.read(xml_name))
+
+
+# ── Patrones de archivos ──────────────────────────────────────────────────────
+#
+# Tipos SUNAT (nombre oficial intacto) vs fehaciencia (renombrar con timestamp).
+# Separar la responsabilidad de "qué guardar tal cual" vs "qué renombrar"
+# hace el flujo más legible y fácil de extender.
+
+SUNAT_TYPES = {
+    DocumentType.INVOICE_ZIP,
+    DocumentType.INVOICE_XML,
+    DocumentType.INVOICE_PDF,
+    DocumentType.DELIVERY_GUIDE_XML,
+    DocumentType.CREDIT_NOTE_XML,
+    DocumentType.CREDIT_NOTE_PDF,
+    DocumentType.CREDIT_NOTE_ZIP,
+}
+
+
+def build_patterns(serie: str, number: int, ruc: str) -> dict[DocumentType, str]:
+    return {
+        DocumentType.INVOICE_PDF: rf"^PDF-DOC-{serie}-?{number}{ruc}\.pdf$",
+        DocumentType.DELIVERY_GUIDE: rf"^{ruc}-09-.*\.pdf$",
+        DocumentType.DELIVERY_GUIDE_XML: rf"^{ruc}-09-.*\.xml$",
+        DocumentType.PURCHASE_ORDER: rf"^OC-{number}\.(pdf|jpg|jpeg|png)$",
+        DocumentType.DELIVERY_GUIDE_SIGNED:  # antes SIGNED_SHIPPING_RECEIPT
+        rf"^GF-{number}\.(pdf|jpg|jpeg|png)$",
+        DocumentType.AGENCY_GUIDE:  # antes CARRIER_RECEIPT
+        rf"^AG-{number}\.(pdf|jpg|jpeg|png)$",
+        DocumentType.PAYMENT_VOUCHER:  # antes BANK_VOUCHER
+        rf"^dp-{number}.*\.(pdf|jpg|jpeg|png)$",
+        DocumentType.PHOTO: rf"^ft-{number}.*\.(jpg|jpeg|png|webp|heic)$",
+        DocumentType.CREDIT_NOTE_ZIP: rf"^NOTA_CREDITO.*{serie}.*\.zip$",
+        DocumentType.CREDIT_NOTE_PDF: rf"^PDF-NOTA_CREDITO.*\.pdf$",
+        DocumentType.CREDIT_NOTE_XML: rf"^.*NOTA_CREDITO.*{serie}.*\.xml$",
+    }
+
+
+# ── Flujo principal ───────────────────────────────────────────────────────────
+
+
 def main():
-    import uuid
-
+    RUC = "20610555536"
     VOUCHER_DIR = Path("/home/johneyder/Downloads/COMPROBANTES/2026/")
-    invoice_regex = re.compile(r"FACTURAE001-[0-9]{4}20610555536.zip", re.IGNORECASE)
+    invoice_regex = re.compile(rf"FACTURAE001-[0-9]{{4}}{RUC}\.zip", re.IGNORECASE)
 
-    zips_path = list(VOUCHER_DIR.rglob("*.zip"))
-    invoices_path = [
-        invoice for invoice in zips_path if invoice_regex.fullmatch(invoice.name)
-    ]
+    all_zips = list(VOUCHER_DIR.rglob("*.zip"))
+    invoice_zips = [z for z in all_zips if invoice_regex.fullmatch(z.name)]
 
-    invoices_path = invoices_path
-    print(f"🚀 Se encontraron {len(invoices_path)} facturas potenciales para procesar.")
+    print(f"🚀 {len(invoice_zips)} facturas encontradas para procesar.")
 
     with Session(engine) as session:
-        for invoice_path in invoices_path:  # Limitado a 2 para pruebas iniciales
+        for zip_path in invoice_zips:
             try:
-                # 1. Procesar XML principal de la Factura desde el ZIP
-                invoice_data = process_zip_invoice(invoice_path)
-
+                invoice_data = parse_zip_invoice(zip_path)
                 serie = invoice_data["serie"]
                 number = invoice_data["number"]
-                RUC = "20610555536"
-                issue_date = invoice_data["issue_date"]
+                issue_date: date = invoice_data["issue_date"]
 
                 local_path = f"{invoice_data['period']}/VENTAS/{serie}-{number}"
-                target_storage_dir = STORAGE_PATH / local_path
+                target_dir = STORAGE_PATH / local_path
 
-                # 2. Registrar Factura (SalesInvoice)
+                # 1. Registrar la factura
                 invoice = SalesInvoice(
                     local_path=local_path,
                     period=invoice_data["period"],
@@ -157,103 +220,69 @@ def main():
                     customer_name=invoice_data["customer_name"],
                     currency=invoice_data["currency"],
                     total_amount=invoice_data["total_amount"],
-                    is_credit=invoice_data["is_credit"],
+                    is_advance=invoice_data["is_advance"],
                 )
                 session.add(invoice)
                 session.commit()
                 session.refresh(invoice)
 
-                month = MOUNTS.get(issue_date.month)
-                assert month is not None
-                # 3. Buscar la carpeta correlativa de adjuntos humanos
-                folder = VOUCHER_DIR / month / "VENTAS" / str(number)
-
-                print("folder", folder)
-                if not folder.exists():
-                    print(
-                        f"⚠️ Carpeta de adjuntos '{number}/' no encontrada. Saltando escaneo secundario."
-                    )
-                    continue
-
-                files = [f.name for f in folder.iterdir() if f.is_file()]
-
-                document_patterns = {
-                    AssetType.INVOICE_PDF: rf"^PDF-DOC-{serie}-?{number}{RUC}\.pdf$",
-                    # Guías de Remisión de SUNAT discriminadas
-                    AssetType.DELIVERY_GUIDE_PDF: rf"^{RUC}-09-.*\.pdf$",
-                    AssetType.DELIVERY_GUIDE_XML: rf"^{RUC}-09-.*\.xml$",
-                    AssetType.PURCHASE_ORDER: rf"^OC-{number}\.(pdf|jpg|jpeg|png)$",
-                    AssetType.SIGNED_SHIPPING_RECEIPT: rf"^GF-{number}\.(pdf|jpg|jpeg|png)$",
-                    AssetType.BANK_VOUCHER: rf"^dp-{number}.*\.(pdf|jpg|jpeg|png)$",
-                    AssetType.PHOTO: rf"^ft-{number}.*\.(pdf|jpg|jpeg|png)$",
-                    # Notas de Crédito discriminadas con precisión según tu estructura
-                    AssetType.CREDIT_NOTE_ZIP: rf"^NOTA_CREDITO.*{serie}.*\.zip$",
-                    AssetType.CREDIT_NOTE_PDF: rf"^PDF-NOTA_CREDITO.*\.pdf$",
-                    AssetType.CREDIT_NOTE_XML: rf"^.*NOTA_CREDITO.*{serie}.*\.xml$",  # Por si extraes el XML
-                }
-
-                # Guardar el ZIP de la factura que originó el proceso
-                storage_file(invoice_path, target_storage_dir, invoice_path.name)
+                # 2. Guardar y registrar el ZIP raíz de la factura
+                stored = store_file(zip_path, target_dir, zip_path.name)
                 session.add(
-                    SupportingDocument(
-                        id=str(uuid.uuid4()),
-                        invoice_id=invoice.id,
-                        document_type=AssetType.INVOICE_ZIP,
-                        file_name=invoice_path.name,
+                    make_document(
+                        invoice.id, DocumentType.INVOICE_ZIP, zip_path, stored
                     )
                 )
 
-                # 4. Iterar y procesar todos los adjuntos encontrados de forma limpia
-                for asset_type, pattern in document_patterns.items():
-                    matched_files = find_all_by_pattern(files, pattern)
+                # 3. Buscar carpeta de adjuntos humanos
+                month_name = MONTHS.get(issue_date.month)
+                assert month_name, f"Mes inválido: {issue_date.month}"
+                attachments_dir = VOUCHER_DIR / month_name / "VENTAS" / str(number)
 
-                    # Si no encontró ningún archivo para este patrón, saltamos al siguiente
-                    if not matched_files:
+                if not attachments_dir.exists():
+                    print(
+                        f"  ⚠️  Carpeta '{number}/' no encontrada — solo ZIP registrado."
+                    )
+                    session.commit()
+                    continue
+
+                files = [f.name for f in attachments_dir.iterdir() if f.is_file()]
+                patterns = build_patterns(serie, number, RUC)
+
+                # 4. Procesar cada tipo de documento
+                for doc_type, pattern in patterns.items():
+                    matches = find_all_by_pattern(files, pattern)
+
+                    if not matches:
                         continue
 
-                    # Si encuentra 2 versiones del PDF de la factura (con o sin guion), nos quedamos SOLO con la primera
-                    if asset_type in [AssetType.INVOICE_PDF]:
-                        matched_files = [matched_files[0]]
+                    # INVOICE_PDF: si hay 2 variantes (con/sin guion), usar solo la primera
+                    if doc_type == DocumentType.INVOICE_PDF:
+                        matches = matches[:1]
 
-                    for filename in matched_files:
-                        # Prevenir volver a mover el ZIP raíz si está dentro de la misma carpeta
-                        if filename == invoice_path.name:
+                    for filename in matches:
+                        # Evita reprocesar el ZIP raíz si aparece dentro de la carpeta
+                        if filename == zip_path.name:
                             continue
 
-                        if asset_type in [
-                            AssetType.INVOICE_ZIP,
-                            AssetType.INVOICE_XML,
-                            AssetType.INVOICE_PDF,
-                            AssetType.DELIVERY_GUIDE_PDF,
-                            AssetType.DELIVERY_GUIDE_XML,
-                            AssetType.CREDIT_NOTE_XML,
-                            AssetType.CREDIT_NOTE_PDF,
-                            AssetType.CREDIT_NOTE_ZIP,
-                        ]:
-                            # Conserva su nombre oficial tal cual vino de SUNAT
-                            unique_name = filename
-                        else:
-                            # Evita que las fotos o vouchers "chancen" a otros
-                            unique_name = generate_unique_filename(filename, asset_type)
+                        source = attachments_dir / filename
 
-                        # Guardado físico en destino ordenado
-                        storage_file(folder / filename, target_storage_dir, unique_name)
-
-                        # Registro indexado en base de datos
-                        doc = SupportingDocument(
-                            id=str(uuid.uuid4()),
-                            invoice_id=invoice.id,
-                            document_type=asset_type,
-                            file_name=unique_name,
+                        # Nombres SUNAT se conservan; fehaciencia se renombra para evitar colisiones
+                        target_name = (
+                            filename
+                            if doc_type in SUNAT_TYPES
+                            else generate_unique_filename(filename, doc_type)
                         )
-                        session.add(doc)
+
+                        stored = store_file(source, target_dir, target_name)
+                        session.add(make_document(invoice.id, doc_type, source, stored))
 
                 session.commit()
-                print(f"✅ Transacción completa para Comprobante: {serie}-{number}")
+                print(f"  ✅ {serie}-{number:04d} procesada correctamente")
 
             except Exception as e:
                 session.rollback()
-                print(f"❌ Error crítico procesando archivo {invoice_path.name}: {e}")
+                print(f"  ❌ Error en {zip_path.name}: {e}")
 
 
 if __name__ == "__main__":
