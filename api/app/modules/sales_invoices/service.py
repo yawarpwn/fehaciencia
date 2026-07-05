@@ -27,6 +27,17 @@ class SaleInvoiceService:
         ).first()
         return serialize_invoice(invoice) if invoice else None
 
+    def find_by_serie_and_number(self, serie: str, number: int):
+        stqm = select(SalesInvoice).where(
+            SalesInvoice.serie == serie, SalesInvoice.number == number
+        )
+        invoice = self.session.exec(stqm).first()
+
+        if invoice is None:
+            return None
+
+        return serialize_invoice(invoice)
+
     def create(self, data: SalesInvoiceCreate) -> SalesInvoiceOut:
         invoice = SalesInvoice(**data.model_dump())
         self.session.add(invoice)

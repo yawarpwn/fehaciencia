@@ -20,9 +20,9 @@ def _doc_out(doc: SupportingDocument) -> DocumentOut:
     )
 
 
-def serialize_invoice(inv: SalesInvoice) -> SalesInvoiceOut:
+def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
     by_type: dict[str, list[DocumentOut]] = {}
-    for doc in inv.documents:
+    for doc in invoice.documents:
         by_type.setdefault(doc.document_type.value, []).append(_doc_out(doc))
 
     present_types = set(by_type.keys())
@@ -30,29 +30,31 @@ def serialize_invoice(inv: SalesInvoice) -> SalesInvoiceOut:
 
     result = compute_missing(
         present_types=present_types,
-        total_amount=inv.total_amount,
-        is_agency_shipment=inv.is_agency_shipment,
+        total_amount=invoice.total_amount,
+        is_agency_shipment=invoice.is_agency_shipment,
         has_credit_note=has_credit_note,
+        is_advance=invoice.is_advance,
     )
 
     short_name = (
-        inv.customer_name[:25] + "..."
-        if len(inv.customer_name) > 25
-        else inv.customer_name
+        invoice.customer_name[:25] + "..."
+        if len(invoice.customer_name) > 25
+        else invoice.customer_name
     )
 
     credit_notes = by_type.get("CREDIT_NOTE_PDF", [])
+    pdf_invoices = by_type.get("INVOICE_PDF", [])
 
     return SalesInvoiceOut(
-        id=inv.id,
-        invoiceCode=f"{inv.serie}-{inv.number:04d}",
-        period=inv.period,
-        status=inv.status.value,
-        customerRuc=inv.customer_ruc,
-        customerName=inv.customer_name,
+        id=invoice.id,
+        invoiceCode=f"{invoice.serie}-{invoice.number:04d}",
+        period=invoice.period,
+        status=result.status,
+        customerRuc=invoice.customer_ruc,
+        customerName=invoice.customer_name,
         customerShortName=short_name,
-        totalAmount=inv.total_amount,
-        isAdvance=inv.is_advance,
+        totalAmount=invoice.total_amount,
+        isAdvance=invoice.is_advance,
         purchaseOrder=by_type.get("PURCHASE_ORDER", [None])[0],
         deliveryGuides=by_type.get("DELIVERY_GUIDE", []),
         agencyGuides=by_type.get("AGENCY_GUIDE", []),
@@ -60,7 +62,7 @@ def serialize_invoice(inv: SalesInvoice) -> SalesInvoiceOut:
         photos=by_type.get("PHOTO", []),
         vouchers=by_type.get("PAYMENT_VOUCHER", []),
         creditNote=credit_notes[0] if credit_notes else None,
-        isComplete=result.is_complete,
+        pdfFile=pdf_invoices[0] if pdf_invoices else None,
         missing=result.missing,
-        isAgencyShipment=inv.is_agency_shipment,
+        isAgencyShipment=invoice.is_agency_shipment,
     )

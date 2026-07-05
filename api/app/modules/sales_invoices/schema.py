@@ -53,6 +53,7 @@ class SalesInvoiceOut(BaseModel):
 
     # Documentos agrupados
     purchaseOrder: DocumentOut | None
+    pdfFile: DocumentOut | None
     deliveryGuides: list[DocumentOut]
     agencyGuides: list[DocumentOut]
     signedDeliveryGuides: list[DocumentOut]
@@ -61,5 +62,5 @@ class SalesInvoiceOut(BaseModel):
     creditNote: DocumentOut | None
 
     # Estado calculado
-    isComplete: bool
+    # isComplete: bool
     missing: list[str]

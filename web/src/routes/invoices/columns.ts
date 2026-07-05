@@ -9,7 +9,7 @@ import ImageOffIcon from '@lucide/svelte/icons/image-off';
 import MultiDocThumbnails from '@/components/multi-doc-thumbnails.svelte';
 import ReceiptIcon from '@lucide/svelte/icons/receipt';
 import { SINGLE_DOC_META, SINGLE_DOC_ORDER, MULTI_DOC_META, MULTI_DOC_ORDER } from '$lib/constants';
-import type { SaleInvoice } from '$lib/types';
+import type { InvoiceDocument, InvoiceStatus, SaleInvoice } from '$lib/types';
 import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
 
 const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
@@ -33,6 +33,17 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 	{
 		accessorKey: 'customerShortName',
 		header: 'Cliente'
+	},
+	{
+		id: 'Factura',
+		header: 'FA',
+		cell: ({ row }) => {
+			return renderComponent(SingleDocStatus, {
+				document: row.original.pdfFile,
+				label: 'mee',
+				icon: ReceiptIcon
+			});
+		}
 	},
 	{
 		id: 'purchaseOrder',
@@ -84,10 +95,33 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		id: 'status',
 		header: 'Estado',
 		cell: ({ row }) => {
-			const { isComplete, missing } = row.original;
-			const snippet = createRawSnippet<[{ isComplete: boolean; missing: string[] }]>((getData) => {
-				const { isComplete, missing } = getData();
-				if (isComplete) {
+			const { isComplete, missing, creditNote, isAdvance, status } = row.original;
+
+			const snippet = createRawSnippet<
+				[
+					{
+						missing: string[];
+						status: InvoiceStatus;
+					}
+				]
+			>((getData) => {
+				const { missing, status } = getData();
+
+				if (status === 'VOIDED') {
+					return {
+						render: () =>
+							`<span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-400">NC</span>`
+					};
+				}
+
+				if (status === 'ADVANCE') {
+					return {
+						render: () =>
+							`<span class="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-400">PRE</span>`
+					};
+				}
+
+				if (status === 'COMPLETE') {
 					return {
 						render: () =>
 							`<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">Completo</span>`
@@ -96,10 +130,10 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 				const tooltip = missing.join(', ');
 				return {
 					render: () =>
-						`<span title="Falta: ${tooltip}" class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-400 cursor-help">Falta ${missing.length}</span>`
+						`<span title="Falta: ${tooltip}" class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-400 cursor-help">${missing[0]}</span>`
 				};
 			});
-			return renderSnippet(snippet, { isComplete, missing });
+			return renderSnippet(snippet, { isComplete, missing, creditNote, isAdvance, status });
 		}
 	},
 	{

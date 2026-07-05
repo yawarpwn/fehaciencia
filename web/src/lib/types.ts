@@ -11,6 +11,8 @@ export type MultiDocType =
 	| 'AGENCY_GUIDE' // Guía de agencia
 	| 'DELIVERY_GUIDE_SIGNED'; // Guía firmada
 
+export type InvoiceStatus = 'COMPLETE' | 'VOIDED' | 'INCOMPLETE' | 'ADVANCE';
+
 export type DocumentType = SingleDocType | MultiDocType;
 
 export type InvoiceDocument = {
@@ -26,13 +28,15 @@ export type SaleInvoice = {
 	id: string;
 	invoiceCode: string; // "E001-1341" — armado en el backend
 	period: string; // "202601"
-	status: 'ACTIVE' | 'VOIDED';
+	status: InvoiceStatus;
 	customerRuc: string;
 	customerName: string;
 	customerShortName: string;
 	totalAmount: number;
 	creditNote: InvoiceDocument | null;
 	isAdvance: boolean;
+	isAgencyShipment: boolean;
+	isVoided: boolean;
 
 	// Documentos únicos
 	purchaseOrder: InvoiceDocument | null;

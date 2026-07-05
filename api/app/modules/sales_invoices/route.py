@@ -20,6 +20,16 @@ def get_invoice(invoice_id: str, session=Depends(get_session)):
     return invoice
 
 
+@router.get("/search/{invoice_code}", response_model=SalesInvoiceOut)
+def find_invoice(invoice_code: str, session=Depends(get_session)):
+    serie, number = invoice_code.upper().split("-")
+    service = SaleInvoiceService(session)
+    invoice = service.find_by_serie_and_number(serie, int(number))
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    return invoice
+
+
 @router.post("", response_model=SalesInvoiceOut, status_code=201)
 def create_invoice(payload: SalesInvoiceCreate, session=Depends(get_session)):
     return SaleInvoiceService(session).create(payload)

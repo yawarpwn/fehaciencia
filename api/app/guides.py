@@ -9,6 +9,7 @@ from sqlmodel import select
 def parse_xml_data(xml_content: bytes) -> tuple:
     root = ET.fromstring(xml_content)
 
+    # Si el XML contiene el código de modalidad de traslado 02 (por agencia).
     agency_name = get_text(
         root, ".//cac:CarrierParty//cac:PartyLegalEntity//cbc:RegistrationName"
     )
@@ -26,7 +27,6 @@ def main():
                 agency_name, aditional_references = parse_xml_data(
                     credit_note_path.read_bytes()
                 )
-
                 if agency_name is None or len(aditional_references) == 0:
                     continue
 
