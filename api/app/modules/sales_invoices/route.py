@@ -12,15 +12,23 @@ def list_invoices(
     response: Response,
     page: int | None = None,
     limit: int | None = None,
+    q: str | None = None,
+    period: str | None = None,
+    status: str | None = None,
     session=Depends(get_session),
 ):
     service = SaleInvoiceService(session)
     if page is not None and limit is not None:
-        invoices, total = service.get_paginated(page, limit)
+        invoices, total = service.get_paginated(page, limit, q=q, period=period, status=status)
         response.headers["X-Total-Count"] = str(total)
         response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
         return invoices
-    return service.get_all()
+    return service.get_all(q=q, period=period, status=status)
+
+
+@router.get("/periods", response_model=list[str])
+def list_periods(session=Depends(get_session)):
+    return SaleInvoiceService(session).get_distinct_periods()
 
 
 @router.get("/{invoice_id}", response_model=SalesInvoiceOut)

@@ -5,4 +5,4 @@
 	let { data } = $props();
 </script>
 
-<DataTable data={data.invoices} {columns} pagination={data.pagination} />
+<DataTable data={data.invoices} {columns} pagination={data.pagination} q={data.q} />
