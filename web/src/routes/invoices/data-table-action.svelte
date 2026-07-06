@@ -3,9 +3,23 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 
-	let { id }: { id: string } = $props();
+	import DocumentDialog from '@/components/document-dialog.svelte';
+	import type { SaleInvoice } from '@/types';
+
+	let { invoice }: { invoice: SaleInvoice } = $props();
+
+	let open = $state(false);
+
+	function openModal() {
+		open = true;
+	}
+
+	function closeModal() {
+		open = false;
+	}
 </script>
 
+<DocumentDialog {open} {invoice} onClose={closeModal} />
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
@@ -18,12 +32,8 @@
 	<DropdownMenu.Content>
 		<DropdownMenu.Group>
 			<DropdownMenu.Label>Actions</DropdownMenu.Label>
-			<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(id)}>
-				Copy payment ID
-			</DropdownMenu.Item>
+			<DropdownMenu.Item onclick={() => openModal()}>Subir</DropdownMenu.Item>
 		</DropdownMenu.Group>
 		<DropdownMenu.Separator />
-		<DropdownMenu.Item>View customer</DropdownMenu.Item>
-		<DropdownMenu.Item>View payment details</DropdownMenu.Item>
 	</DropdownMenu.Content>
 </DropdownMenu.Root>

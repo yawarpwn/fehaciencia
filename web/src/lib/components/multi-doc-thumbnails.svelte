@@ -21,7 +21,7 @@
 		<Icon size={16} strokeWidth={2} />
 	</div>
 {:else}
-	<div class="flex items-center -space-x-3">
+	<div class="flex items-center -space-x-3 relative">
 		{#each visible as doc (doc.id)}
 			<button
 				type="button"

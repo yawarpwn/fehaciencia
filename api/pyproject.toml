@@ -8,6 +8,7 @@ dependencies = [
   "fastapi>=0.137.1",
   "opencv-python>=4.13.0.92",
   "pillow>=12.3.0",
+  "python-magic>=0.4.27",
   "python-multipart",
   "sqlmodel>=0.0.39",
   "uvicorn>=0.49.0",

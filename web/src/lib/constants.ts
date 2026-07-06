@@ -35,3 +35,5 @@ export const MULTI_DOC_ORDER: MultiDocType[] = [
 	'PAYMENT_VOUCHER',
 	'PHOTO'
 ];
+
+// Documentos múltiples (0..N por factura) → columna de miniaturas

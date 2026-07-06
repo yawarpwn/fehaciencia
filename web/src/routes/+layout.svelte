@@ -10,7 +10,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <ModeWatcher />
-<div class="bg-background relative z-10 min-h-svh flex flex-col max-w-7xl w-full mx-auto">
+<div class="bg-background relative z-10 min-h-svh flex flex-col max-w-7xl w-full mx-auto px-2">
 	<SiteHeader />
 	<main class="flex flex-1 flex-col">
 		{@render children()}

@@ -1,8 +1,19 @@
 # app/sales_invoices/router.py
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, Form
+
+from app.modules.sales_invoices.model import DocumentType
 from .schema import SalesInvoiceCreate, SalesInvoiceOut
 from .service import SaleInvoiceService
 from app.core.database import get_session
+from fastapi.responses import JSONResponse
+from app.config import (
+    ALLOWED_EXTENSIONS,
+    STORAGE_PATH,
+    MAX_FILE_SIZE,
+)
+import uuid
+
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/sales-invoices", tags=["sales_invoices"])
 
@@ -19,7 +30,9 @@ def list_invoices(
 ):
     service = SaleInvoiceService(session)
     if page is not None and limit is not None:
-        invoices, total = service.get_paginated(page, limit, q=q, period=period, status=status)
+        invoices, total = service.get_paginated(
+            page, limit, q=q, period=period, status=status
+        )
         response.headers["X-Total-Count"] = str(total)
         response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
         return invoices
@@ -52,3 +65,16 @@ def find_invoice(invoice_code: str, session=Depends(get_session)):
 @router.post("", response_model=SalesInvoiceOut, status_code=201)
 def create_invoice(payload: SalesInvoiceCreate, session=Depends(get_session)):
     return SaleInvoiceService(session).create(payload)
+
+
+@router.post("/upload")
+async def upload_file(
+    invoice_id: str = Form(...),
+    document_type: DocumentType = Form(...),
+    file: UploadFile = File(...),
+    session=Depends(get_session),
+):
+    service = SaleInvoiceService(session)
+    document = await service.upload_file(invoice_id, document_type, file)
+    print(document)
+    return {"document": "creado"}

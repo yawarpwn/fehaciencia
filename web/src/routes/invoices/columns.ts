@@ -111,7 +111,9 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 
 			return renderComponent(MultiDocThumbnails, {
 				documents: documents,
-				icon: MULTI_DOC_META[docType].icon
+				icon: MULTI_DOC_META[docType].icon,
+				invoice: row.original,
+				docType: docType
 			});
 		}
 	})),
@@ -119,7 +121,7 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		id: 'status',
 		header: 'Estado',
 		cell: ({ row }) => {
-			const { isComplete, missing, creditNote, isAdvance, status } = row.original;
+			const { missing, status } = row.original;
 
 			const snippet = createRawSnippet<
 				[
@@ -157,11 +159,11 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 						`<span title="Falta: ${tooltip}" class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-400 cursor-help">${missing[0]}</span>`
 				};
 			});
-			return renderSnippet(snippet, { isComplete, missing, creditNote, isAdvance, status });
+			return renderSnippet(snippet, { missing, status });
 		}
 	},
 	{
 		id: 'action',
-		cell: ({ row }) => renderComponent(DataTableAction, { id: row.original.id })
+		cell: ({ row }) => renderComponent(DataTableAction, { invoice: row.original })
 	}
 ];

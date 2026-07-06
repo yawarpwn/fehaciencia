@@ -7,7 +7,7 @@ from app.config import BASE_URL
 CREDIT_NOTE_TYPES = {"CREDIT_NOTE_PDF", "CREDIT_NOTE_ZIP", "CREDIT_NOTE_XML"}
 
 
-def _doc_out(doc: SupportingDocument) -> DocumentOut:
+def serialize_document(doc: SupportingDocument) -> DocumentOut:
     file_url = f"{BASE_URL}/documents/{doc.file_path}"
 
     thumbnail_url = None
@@ -27,7 +27,7 @@ def _doc_out(doc: SupportingDocument) -> DocumentOut:
 def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
     by_type: dict[str, list[DocumentOut]] = {}
     for doc in invoice.documents:
-        by_type.setdefault(doc.document_type.value, []).append(_doc_out(doc))
+        by_type.setdefault(doc.document_type.value, []).append(serialize_document(doc))
 
     present_types = set(by_type.keys())
     has_credit_note = bool(present_types & CREDIT_NOTE_TYPES)
