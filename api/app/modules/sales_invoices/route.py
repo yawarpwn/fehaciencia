@@ -1,5 +1,5 @@
 # app/sales_invoices/router.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from .schema import SalesInvoiceCreate, SalesInvoiceOut
 from .service import SaleInvoiceService
 from app.core.database import get_session
@@ -8,8 +8,19 @@ router = APIRouter(prefix="/sales-invoices", tags=["sales_invoices"])
 
 
 @router.get("", response_model=list[SalesInvoiceOut])
-def list_invoices(session=Depends(get_session)):
-    return SaleInvoiceService(session).get_all()
+def list_invoices(
+    response: Response,
+    page: int | None = None,
+    limit: int | None = None,
+    session=Depends(get_session),
+):
+    service = SaleInvoiceService(session)
+    if page is not None and limit is not None:
+        invoices, total = service.get_paginated(page, limit)
+        response.headers["X-Total-Count"] = str(total)
+        response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
+        return invoices
+    return service.get_all()
 
 
 @router.get("/{invoice_id}", response_model=SalesInvoiceOut)

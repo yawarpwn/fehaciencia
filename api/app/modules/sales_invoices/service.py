@@ -1,6 +1,7 @@
 # app/sales_invoices/service.py
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func
 from .model import SalesInvoice
 from .schema import SalesInvoiceCreate, SalesInvoiceOut
 from .serializer import serialize_invoice
@@ -20,6 +21,13 @@ class SaleInvoiceService:
     def get_all(self) -> list[SalesInvoiceOut]:
         invoices = self.session.exec(self._base_query()).all()
         return [serialize_invoice(inv) for inv in invoices]
+
+    def get_paginated(self, page: int, limit: int) -> tuple[list[SalesInvoiceOut], int]:
+        offset = (page - 1) * limit
+        total = self.session.exec(select(func.count()).select_from(SalesInvoice)).one()
+        query = self._base_query().offset(offset).limit(limit)
+        invoices = self.session.exec(query).all()
+        return [serialize_invoice(inv) for inv in invoices], total
 
     def get_by_id(self, invoice_id: str) -> SalesInvoiceOut | None:
         invoice = self.session.exec(
