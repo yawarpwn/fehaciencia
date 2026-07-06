@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-AMOUNT_THRESHOLD = 2000  # Monto a partir del cual los documentos son obligatorios
+AMOUNT_THRESHOLD = 1000  # Monto a partir del cual los documentos son obligatorios
 
 
 class InvoiceStatus(str, Enum):  # noqa: F821

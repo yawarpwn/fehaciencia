@@ -6,6 +6,8 @@ from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 from sqlalchemy import event
 
+from app.core.utils import thumbnails
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
@@ -58,6 +60,7 @@ class SalesInvoice(TimestampMixin, table=True):
     total_amount: float
     is_advance: bool = Field(default=False)
     is_voided: bool = Field(default=False)
+    is_credit: bool = Field(default=False)
     local_path: str  # "202606/VENTAS/E001-1768" — carpeta base en disco
 
     is_agency_shipment: bool = Field(default=False)
@@ -87,5 +90,6 @@ class SupportingDocument(TimestampMixin, table=True):
     # ej: "202606/VENTAS/E001-1768/foto_letrero.jpg"
     mime_type: str  # "image/jpeg", "application/pdf"
     file_size: int  # bytes
+    thumbnail_path: str | None
 
     invoice: Optional[SalesInvoice] = Relationship(back_populates="documents")

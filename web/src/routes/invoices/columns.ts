@@ -11,6 +11,10 @@ import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
 import FileText from '@lucide/svelte/icons/file';
 
 const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+const dateFormater = new Intl.DateTimeFormat('es-PE', {
+	day: '2-digit',
+	month: '2-digit'
+});
 
 export const columns: ColumnDef<SaleInvoice>[] = [
 	{
@@ -27,6 +31,28 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		// 	}));
 		// 	return renderSnippet(snippet, row.original.period);
 		// }
+	},
+	{
+		id: 'Fecha',
+		header: 'Fecha',
+		cell: ({ row }) => {
+			const issueDate = row.original.issueDate;
+
+			const dateCellSnippet = createRawSnippet<[{ issueDate: string }]>((getIsuue) => {
+				const { issueDate } = getIsuue();
+
+				return {
+					render: () =>
+						`<div class="text-end font-medium">${dateFormater.format(new Date(issueDate))}</div>`
+				};
+			});
+
+			return renderSnippet(dateCellSnippet, { issueDate });
+		}
+	},
+	{
+		accessorKey: 'customerRuc',
+		header: 'Ruc'
 	},
 	{
 		accessorKey: 'customerShortName',
@@ -108,14 +134,14 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 				if (status === 'VOIDED') {
 					return {
 						render: () =>
-							`<span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-400">NC</span>`
+							`<span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-400">ANULADO</span>`
 					};
 				}
 
 				if (status === 'ADVANCE') {
 					return {
 						render: () =>
-							`<span class="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-400">PRE</span>`
+							`<span class="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-400">ANTICIPO</span>`
 					};
 				}
 

@@ -11,7 +11,7 @@
 		icon: Component;
 	} = $props();
 
-	const maxVisible = 3;
+	const maxVisible = 2;
 	const visible = $derived(documents.slice(0, maxVisible));
 	const extra = $derived(documents.length - maxVisible);
 </script>
@@ -21,7 +21,7 @@
 		<Icon size={16} strokeWidth={2} />
 	</div>
 {:else}
-	<div class="flex items-center -space-x-2">
+	<div class="flex items-center -space-x-3">
 		{#each visible as doc (doc.id)}
 			<button
 				type="button"

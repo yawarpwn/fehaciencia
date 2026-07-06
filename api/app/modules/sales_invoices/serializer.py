@@ -9,7 +9,11 @@ CREDIT_NOTE_TYPES = {"CREDIT_NOTE_PDF", "CREDIT_NOTE_ZIP", "CREDIT_NOTE_XML"}
 
 def _doc_out(doc: SupportingDocument) -> DocumentOut:
     file_url = f"{BASE_URL}/documents/{doc.file_path}"
-    thumbnail_url = file_url if doc.document_type == DocumentType.PHOTO else None
+
+    thumbnail_url = None
+    if doc.thumbnail_path is not None:
+        thumbnail_url = f"{BASE_URL}/documents/{doc.thumbnail_path}"
+
     return DocumentOut(
         id=doc.id,
         documentType=doc.document_type.value,
@@ -65,4 +69,5 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         pdfFile=pdf_invoices[0] if pdf_invoices else None,
         missing=result.missing,
         isAgencyShipment=invoice.is_agency_shipment,
+        issueDate=invoice.issue_date.strftime("%Y-%m-%d"),
     )

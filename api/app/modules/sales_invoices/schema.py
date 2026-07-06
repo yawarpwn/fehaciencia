@@ -61,6 +61,7 @@ class SalesInvoiceOut(BaseModel):
     photos: list[DocumentOut]
     vouchers: list[DocumentOut]
     creditNote: DocumentOut | None
+    issueDate: str
 
     # Estado calculado
     # isComplete: bool

@@ -5,6 +5,8 @@ import mimetypes
 from datetime import datetime
 import shutil
 from app.config import STORAGE_PATH
+from app.core.utils import thumbnails
+from app.core.utils.thumbnails import generate_thumbnail
 from app.modules.sales_invoices.model import (
     SalesInvoice,
     SupportingDocument,
@@ -63,14 +65,30 @@ def make_document(
     doc_type: DocumentType,
     source_path: Path,
     stored_path: Path,
+    local_path: str | None,
 ) -> SupportingDocument:
     """Construye un SupportingDocument con todos los campos requeridos."""
     relative_path = stored_path.relative_to(STORAGE_PATH)
+    mime_type = detect_mime_type(source_path)
+
+    thumbnail_path = None
+
+    if (
+        mime_type.endswith("jpeg")
+        or mime_type.endswith("jpg")
+        or mime_type.endswith("png")
+        or mime_type.endswith("webp")
+        or mime_type.endswith("heic")
+    ) and local_path is not None:
+        thumbnail_path_name = generate_thumbnail(source_path, STORAGE_PATH / local_path)
+        thumbnail_path = relative_path.parent / thumbnail_path_name
+
     return SupportingDocument(
         invoice_id=invoice_id,
         document_type=doc_type,
         file_name=stored_path.name,
         file_path=str(relative_path),  # relativo a STORAGE_PATH
-        mime_type=detect_mime_type(source_path),
+        mime_type=mime_type,
         file_size=source_path.stat().st_size,
+        thumbnail_path=str(thumbnail_path) if thumbnail_path is not None else None,
     )

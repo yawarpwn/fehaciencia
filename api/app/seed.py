@@ -1,24 +1,22 @@
 import mimetypes
 import zipfile
-import shutil
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from datetime import datetime, date
+from datetime import date
 from sqlmodel import Session
+from app.config import ALLOWED_EXTENSIONS
 
 from app.core.database import engine
+from app.core.utils import thumbnails
 from app.modules.sales_invoices.model import (
     SalesInvoice,
-    SupportingDocument,
     DocumentType,
 )
 from app.scripts.helpers import (
     get_text,
-    find_all,
     is_prepayment_invoice,
     make_document,
-    detect_mime_type,
     generate_unique_filename,
     store_file,
     find_all_by_pattern,
@@ -184,7 +182,11 @@ def main():
                 stored = store_file(zip_path, target_dir, zip_path.name)
                 session.add(
                     make_document(
-                        invoice.id, DocumentType.INVOICE_ZIP, zip_path, stored
+                        invoice.id,
+                        DocumentType.INVOICE_ZIP,
+                        zip_path,
+                        stored,
+                        local_path=None,
                     )
                 )
 
@@ -229,7 +231,15 @@ def main():
                         )
 
                         stored = store_file(source, target_dir, target_name)
-                        session.add(make_document(invoice.id, doc_type, source, stored))
+                        session.add(
+                            make_document(
+                                invoice.id,
+                                doc_type,
+                                source,
+                                stored,
+                                local_path,
+                            )
+                        )
 
                 session.commit()
                 print(f"  ✅ {serie}-{number:04d} procesada correctamente")

@@ -37,6 +37,7 @@ export type SaleInvoice = {
 	isAdvance: boolean;
 	isAgencyShipment: boolean;
 	isVoided: boolean;
+	issueDate: string;
 
 	// Documentos únicos
 	pdfFile: InvoiceDocument;
