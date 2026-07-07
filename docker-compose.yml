@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /ney/FEHACIENCIA_DATA:/data
+      - ./data:/data
     environment:
       - DATA_PATH=/data
       - MAX_FILE_SIZE_MB=20

@@ -1,6 +1,5 @@
 from pathlib import Path
 from datetime import datetime
-import mimetypes
 import magic
 
 # import shutil
