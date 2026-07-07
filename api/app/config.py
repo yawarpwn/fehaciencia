@@ -3,7 +3,7 @@ from pathlib import Path
 
 DATA_PATH = Path(os.getenv("DATA_PATH", Path(__file__).parent.parent / "tmp"))
 
-STORAGE_PATH = DATA_PATH / "storage"
+STORAGE_PATH = DATA_PATH / "COMPROBANTES"
 DATABASE_PATH = DATA_PATH / "db" / "fehaciencia_tell.db"
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 

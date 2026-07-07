@@ -7,7 +7,7 @@ SUPPORTED_FORMATS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def generate_thumbnail(
-    image_bytes: bytes, suffix: str, size: tuple[int, int] = (128, 128)
+    image_bytes: bytes, suffix: str, size: tuple[int, int] = (50, 50)
 ) -> bytes:
     """
     Genera la miniatura de una imagen a partir de sus bytes y retorna los bytes resultantes.

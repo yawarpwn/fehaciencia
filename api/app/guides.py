@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from app.config import STORAGE_PATH
-from .seed import get_text, find_all
+from .scripts.helpers import get_text, find_all
 from app.core.database import engine, Session
 from app.modules.sales_invoices.model import SalesInvoice
 from sqlmodel import select

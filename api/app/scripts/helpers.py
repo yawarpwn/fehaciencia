@@ -5,13 +5,12 @@ import mimetypes
 from datetime import datetime
 import shutil
 from app.config import STORAGE_PATH
-from app.core.utils import thumbnails
-from app.core.utils.thumbnails import generate_thumbnail
 from app.modules.sales_invoices.model import (
     SalesInvoice,
     SupportingDocument,
     DocumentType,
 )
+from PIL import Image
 
 NAMESPACES = {
     "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
@@ -58,6 +57,28 @@ def store_file(source: Path, target_dir: Path, target_name: str) -> Path:
     destination = target_dir / target_name
     shutil.copy2(source, destination)
     return destination
+
+
+def generate_thumbnail(original_path: Path, destination_paht: Path) -> str:
+    # if original_path.suffix.lower() not in SUPPORTED_FORMATS:
+    #     return None
+
+    thumb_name = f"thumb_{original_path.stem}{original_path.suffix}"
+    thumb_path = destination_paht / thumb_name
+
+    with Image.open(original_path) as img:
+        img.thumbnail((50, 50), Image.Resampling.LANCZOS)
+
+        if img.mode in ("RGBA", "P") and thumb_path.suffix.lower() in {".jpg", ".jpeg"}:
+            img = img.convert("RGB")
+
+        img.save(
+            thumb_path,
+            optimize=True,
+            quality=75,
+        )
+
+    return thumb_name
 
 
 def make_document(
