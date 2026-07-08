@@ -15,7 +15,13 @@ import uuid
 
 from datetime import datetime, timezone
 
-router = APIRouter(prefix="/sales-invoices", tags=["sales_invoices"])
+from app.core.auth import get_current_user
+
+router = APIRouter(
+    prefix="/sales-invoices",
+    tags=["sales_invoices"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("", response_model=list[SalesInvoiceOut])

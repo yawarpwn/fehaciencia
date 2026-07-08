@@ -38,3 +38,10 @@ Es un dashboard web para visualizar y gestionar facturas de venta (`SalesInvoice
 
 3. **Consumo de APIs**:
    - El endpoint principal para facturas es `http://localhost:8000/sales-invoices`.
+
+4. **Sistema de Autenticación**:
+    - La ruta raíz `/` sirve de login. Las rutas `/invoices` y `/api/*` están protegidas a nivel servidor en `src/hooks.server.ts`.
+    - Si el usuario no tiene la cookie `session_token` e intenta acceder a una ruta protegida, se le redirige a `/`. Si tiene sesión y accede a `/`, se le redirige a `/invoices`.
+    - La sesión se mantiene mediante la cookie de sesión `session_token` configurada como `HttpOnly`, `SameSite: Lax` y segura en producción.
+    - Se cuenta con una ruta de logout (`/logout`) mediante método POST que elimina la cookie `session_token` de sesión del navegador.
+    - Cada consulta al API en `src/routes/invoices/+page.server.ts` y en proxies como `src/routes/api/invoices/+server.ts` debe propagar el token utilizando `locals.token` en la cabecera `Authorization: Bearer <token>`.

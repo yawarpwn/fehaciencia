@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.modules.sales_invoices.route import router as sales_invoices
 from app.modules.upload.route import router as upload
+from app.modules.auth.route import router as auth
+
 
 
 @asynccontextmanager
@@ -36,6 +38,7 @@ app.add_middleware(
 # Servir la carpeta de almacenamiento de manera estática en la URL "/documents"
 app.mount("/documents", StaticFiles(directory=STORAGE_PATH), name="documents")
 
+app.include_router(auth)
 app.include_router(sales_invoices)
 app.include_router(upload)
 

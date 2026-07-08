@@ -1,15 +1,20 @@
 import uuid
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from fastapi.responses import JSONResponse
 from app.config import (
     ALLOWED_EXTENSIONS,
     STORAGE_PATH,
     MAX_FILE_SIZE,
 )
+from app.core.auth import get_current_user
 
 from datetime import datetime, timezone
 
-router = APIRouter(prefix="/upload", tags=["upload"])
+router = APIRouter(
+    prefix="/upload",
+    tags=["upload"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post("/")

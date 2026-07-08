@@ -32,3 +32,9 @@ TellDocs es una API desarrollada en Python para la recepción, almacenamiento y 
    - Todo documento físico guardado debe registrarse con un nombre único utilizando una marca de tiempo y un UUID (`{timestamp}_{uuid4()[:8]}.{ext}`).
 3. **Servicio Estático**:
    - Los documentos guardados se sirven estáticamente bajo el prefijo `/documents` mediante `StaticFiles` montado sobre la ruta configurada por `STORAGE_PATH`.
+4. **Sistema de Autenticación**:
+   - Se implementa autenticación basada en tokens JWT usando `pyjwt` y contraseñas cifradas con `bcrypt`.
+   - El enrutador `app/modules/auth/route.py` maneja los endpoints de `/auth/login` y `/auth/me`.
+   - Al inicializar la base de datos (`app/core/database.py`), si no existe ningún usuario, se siembra automáticamente un usuario `admin` con la contraseña definida por la variable de entorno `DEFAULT_ADMIN_PASSWORD` (por defecto `admin123`).
+   - Las rutas de los endpoints en `/sales-invoices` y `/upload` están protegidas de forma global en sus respectivos enrutadores agregando la dependencia `get_current_user` (`dependencies=[Depends(get_current_user)]`).
+

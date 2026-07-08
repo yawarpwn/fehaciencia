@@ -73,7 +73,7 @@
 	}
 </script>
 
-<div class="flex items-center py-4">
+<div class="flex items-center py-4 justify-between">
 	<div class="relative w-full max-w-sm">
 		<SearchIcon class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 		<input
@@ -95,6 +95,9 @@
 				<XIcon class="size-4" />
 			</button>
 		{/if}
+	</div>
+	<div>
+		<Button disabled>Agregar Venta</Button>
 	</div>
 </div>
 

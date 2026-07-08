@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { SERVER_CONFIG } from '@/server/config';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	const formData = await request.formData();
 
 	const file = formData.get('file');
@@ -30,9 +30,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	console.log(`Upload url ${url}`);
 	const res = await fetch(`${SERVER_CONFIG.apiUrl}/sales-invoices/upload`, {
 		method: 'POST',
-		// headers: {
-		// 	Authorization: `Bearer ${EXTERNAL_API_KEY}`
-		// },
+		headers: locals.token
+			? {
+					Authorization: `Bearer ${locals.token}`
+				}
+			: {},
 		body: externalForm
 	});
 

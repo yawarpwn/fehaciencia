@@ -5,7 +5,8 @@ import { SERVER_CONFIG } from '@/server/config';
 async function fetchInvoices(
 	page: number,
 	limit: number,
-	q: string
+	q: string,
+	token?: string
 ): Promise<{ invoices: SaleInvoice[]; total: number }> {
 	const url = new URL(`${SERVER_CONFIG.apiUrl}/sales-invoices`);
 	url.searchParams.set('page', page.toString());
@@ -13,20 +14,22 @@ async function fetchInvoices(
 	if (q) {
 		url.searchParams.set('q', q);
 	}
-	const res = await fetch(url.toString());
+	const res = await fetch(url.toString(), {
+		headers: token ? { Authorization: `Bearer ${token}` } : {}
+	});
 	const invoices = await res.json();
 	const totalHeader = res.headers.get('X-Total-Count');
 	const total = totalHeader ? parseInt(totalHeader, 10) : invoices.length;
 	return { invoices, total };
 }
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const limit = Number(url.searchParams.get('limit') ?? '10');
 	const q = url.searchParams.get('q') ?? '';
 
 	try {
-		const { invoices, total } = await fetchInvoices(page, limit, q);
+		const { invoices, total } = await fetchInvoices(page, limit, q, locals.token);
 		return {
 			invoices,
 			pagination: {
