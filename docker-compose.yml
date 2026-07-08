@@ -11,16 +11,16 @@ services:
       - DATA_PATH=/data
       - MAX_FILE_SIZE_MB=20
     expose:
-      - "8000"
+      - "7780"
     ports:
-      - "7000:8000"
+      - "7780:7780"
     healthcheck:
       test:
         [
           "CMD",
           "python3",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:7780/health')",
         ]
       interval: 30s
       timeout: 5s
@@ -34,13 +34,15 @@ services:
     restart: unless-stopped
     env_file: .env
     expose:
-      - "3000"
+      - "7730"
     ports:
-      - "4000:3000"
+      - "7730:7730"
     depends_on:
       api:
         condition: service_healthy
     environment:
-      - API_URL=http://api:8000
-      - ORIGIN=http://localhost:4000
+      - API_URL=http://api:7780
+      - PORT=7730
+      #- ORIGIN=http://localhost:4000
+      # 2. Aseguramos también el tamaño máximo del body para Node (25MB en bytes)
       - BODY_SIZE_LIMIT=26214400

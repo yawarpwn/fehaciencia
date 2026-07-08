@@ -14,4 +14,4 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf", ".webp", ".heic"}
 STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:7780"

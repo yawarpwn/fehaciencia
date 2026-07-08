@@ -2,17 +2,17 @@
 from .model import SalesInvoice, SupportingDocument, DocumentType
 from .schema import DocumentOut, SalesInvoiceOut
 from .document_rules import compute_missing
-from app.config import BASE_URL
+# from app.config import BASE_URL
 
 CREDIT_NOTE_TYPES = {"CREDIT_NOTE_PDF", "CREDIT_NOTE_ZIP", "CREDIT_NOTE_XML"}
 
 
 def serialize_document(doc: SupportingDocument) -> DocumentOut:
-    file_url = f"{BASE_URL}/documents/{doc.file_path}"
+    file_url = f"/documents/{doc.file_path}"
 
     thumbnail_url = None
     if doc.thumbnail_path is not None:
-        thumbnail_url = f"{BASE_URL}/documents/{doc.thumbnail_path}"
+        thumbnail_url = f"/documents/{doc.thumbnail_path}"
 
     return DocumentOut(
         id=doc.id,

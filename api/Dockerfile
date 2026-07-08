@@ -17,5 +17,5 @@ COPY app/ ./app/
 ENV DATA_PATH=/data
 RUN mkdir -p /data/storage /data/db
 
-EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 7780
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7780"]

@@ -5,5 +5,5 @@ export const SERVER_CONFIG = {
 	isDev: dev,
 	isProd: !dev,
 
-	apiUrl: env.API_URL || (dev ? 'http://localhost:8000' : '')
+	apiUrl: env.API_URL || (dev ? 'http://localhost:7780' : '')
 };

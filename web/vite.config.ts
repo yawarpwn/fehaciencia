@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-
+const API_TARGET = process.env.API_URL || 'http://localhost:7780';
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -15,7 +15,21 @@ export default defineConfig({
 			adapter: adapter(),
 			alias: {
 				'@/*': './src/lib/*'
+			},
+			csrf: {
+				checkOrigin: false
 			}
 		})
-	]
+	],
+	server: {
+		port: 7730,
+		proxy: {
+			'/documents': {
+				target: API_TARGET,
+				changeOrigin: true,
+				// Esto asegura que si la API se demora en responder imágenes grandes, no se caiga
+				secure: false
+			}
+		}
+	}
 });

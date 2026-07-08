@@ -14,7 +14,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 echo "🚀 Levantando API (FastAPI)..."
-cd api && uv run uvicorn app.main:app --reload --port 8000 &
+cd api && uv run uvicorn app.main:app --reload --port 7780 &
 PID_API=$!
 
 echo "🌐 Levantando Web (SvelteKit)..."
@@ -22,9 +22,9 @@ cd web && pnpm dev &
 PID_WEB=$!
 
 echo ""
-echo -e "${BLUE}API:${NC}     http://localhost:8000"
-echo -e "${RED}Web:${NC}     http://localhost:5173"
-echo -e "${BLUE}API Docs:${NC} http://localhost:8000/docs"
+echo -e "${BLUE}API:${NC}     http://localhost:7780"
+echo -e "${RED}Web:${NC}     http://localhost:7730"
+echo -e "${BLUE}API Docs:${NC} http://localhost:7780/docs"
 echo ""
 echo "Ctrl+C para apagar todo"
 
