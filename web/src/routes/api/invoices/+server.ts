@@ -1,9 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-//import { EXTERNAL_API_URL, EXTERNAL_API_KEY } from '$env/static/private';
-
-const EXTERNAL_API_URL = 'http://localhost:8000/sales-invoices/upload';
-const EXTERNAL_API_KEY = '';
+import { SERVER_CONFIG } from '@/server/config';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
@@ -19,13 +16,19 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(400, 'Faltan campos requeridos');
 	}
 
+	if (!SERVER_CONFIG.apiUrl) {
+		throw error(500, 'La variabla API_URL no esta configurada en el servidor');
+	}
+
 	// Reenviamos a la API externa
 	const externalForm = new FormData();
 	externalForm.append('file', file, file.name);
 	externalForm.append('document_type', documentType);
 	externalForm.append('invoice_id', invoiceId);
 
-	const res = await fetch(EXTERNAL_API_URL, {
+	const url = `${SERVER_CONFIG.apiUrl}/sales-invoices/upload`;
+	console.log(`Upload url ${url}`);
+	const res = await fetch(`${SERVER_CONFIG.apiUrl}/sales-invoices/upload`, {
 		method: 'POST',
 		// headers: {
 		// 	Authorization: `Bearer ${EXTERNAL_API_KEY}`

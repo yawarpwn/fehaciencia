@@ -29,3 +29,4 @@ Thumbs.db
 
 #datos locales de la app
 api/tmp/
+data/

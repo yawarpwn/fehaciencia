@@ -1,8 +1,13 @@
 import type { PageServerLoad } from './$types';
 import type { SaleInvoice } from '$lib/types';
+import { SERVER_CONFIG } from '@/server/config';
 
-async function fetchInvoices(page: number, limit: number, q: string): Promise<{ invoices: SaleInvoice[]; total: number }> {
-	const url = new URL('http://localhost:8000/sales-invoices');
+async function fetchInvoices(
+	page: number,
+	limit: number,
+	q: string
+): Promise<{ invoices: SaleInvoice[]; total: number }> {
+	const url = new URL(`${SERVER_CONFIG.apiUrl}/sales-invoices`);
 	url.searchParams.set('page', page.toString());
 	url.searchParams.set('limit', limit.toString());
 	if (q) {
