@@ -51,12 +51,19 @@ def find_invoice(invoice_id: str, session=Depends(get_session)):
     return service.find_by_serie_and_number(invoice_id)
 
 
-@router.put("/{invoice_id}", response_model=SalesInvoiceOut)
-def update_invoice(
+@router.put("/{id}", response_model=SalesInvoiceOut)
+def update_invoice(id: str, payload: SalesInvoiceUpdate, session=Depends(get_session)):
+    service = SaleInvoiceService(session)
+    return service.update(id, payload)
+
+
+@router.patch("/script/{invoice_id}", response_model=SalesInvoiceOut)
+def update_by_invoice_id(
     invoice_id: str, payload: SalesInvoiceUpdate, session=Depends(get_session)
 ):
+    print("payload", payload)
     service = SaleInvoiceService(session)
-    return service.update(invoice_id, payload)
+    return service.update_by_invoice_id(invoice_id, payload)
 
 
 @router.post("", response_model=SalesInvoiceOut, status_code=201)

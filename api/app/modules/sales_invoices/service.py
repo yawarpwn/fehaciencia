@@ -105,16 +105,29 @@ class SaleInvoiceService:
         created_invoice = self.repository.create(invoice)
         return serialize_invoice(created_invoice)
 
-    def update(self, invoice_id: str, data: SalesInvoiceUpdate) -> SalesInvoiceOut:
-        invoice = self._get_entity_by_id(invoice_id)
+    def update(self, id: str, data: SalesInvoiceUpdate) -> SalesInvoiceOut:
+        invoice = self._get_entity_by_id(id)
 
         # Validar si el invoice_id cambia y ya existe otra con el nuevo id
-        if data.invoice_id is not None and data.invoice_id != invoice.invoice_id:
-            exists = self.repository.get_by_invoice_id(data.invoice_id)
-            if exists is not None:
-                raise ConflictAppError(
-                    f"Ya existe otra factura con el ID {data.invoice_id}"
-                )
+        # if data.invoice_id is not None and data.invoice_id != invoice.invoice_id:
+        #     exists = self.repository.get_by_invoice_id(data.invoice_id)
+        #     if exists is not None:
+        #         raise ConflictAppError(
+        #             f"Ya existe otra factura con el ID {data.invoice_id}"
+        #         )
+
+        updated_invoice = self.repository.update(
+            invoice, data.model_dump(exclude_unset=True)
+        )
+        return serialize_invoice(updated_invoice)
+
+    def update_by_invoice_id(
+        self, invoice_id: str, data: SalesInvoiceUpdate
+    ) -> SalesInvoiceOut:
+        invoice = self.repository.get_by_invoice_id(invoice_id=invoice_id)
+
+        if invoice is None:
+            raise NotFoundAppError(f"Factura con id {invoice_id} no encontrada")
 
         updated_invoice = self.repository.update(
             invoice, data.model_dump(exclude_unset=True)

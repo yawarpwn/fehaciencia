@@ -82,6 +82,7 @@ class SalesInvoiceOut(BaseModel):
     vouchers: list[DocumentOut]
     creditNote: DocumentOut | None
     issueDate: str
+    isVoided: bool
 
     # Estado calculado
     # isComplete: bool

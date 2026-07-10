@@ -70,4 +70,5 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         missing=result.missing,
         isAgencyShipment=invoice.is_agency_shipment,
         issueDate=invoice.issue_date.strftime("%Y-%m-%d"),
+        isVoided=invoice.is_voided,
     )

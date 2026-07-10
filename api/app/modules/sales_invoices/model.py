@@ -35,6 +35,9 @@ class SalesInvoice(TimestampMixin, table=True):
     is_voided: bool = Field(default=False)
     is_credit: bool = Field(default=False)
     local_path: str  # "202606/VENTAS/E001-1768" — carpeta base en disco
+    pdf_file_path: str | None
+    zip_file_path: str | None
+    xml_file_path: str | None
 
     is_agency_shipment: bool = Field(default=False)
 
@@ -66,3 +69,28 @@ class SupportingDocument(TimestampMixin, table=True):
     thumbnail_path: str | None
 
     invoice: Optional[SalesInvoice] = Relationship(back_populates="documents")
+
+
+class CreditNote(TimestampMixin, table=True):
+    __tablename__ = "credit_notes"  # pyright: ignore
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
+    credit_note_id: str = Field(unique=True)
+    issue_date: date
+    pdf_file_path: str
+    zip_file_path: str
+    xml_file_path: str | None
+
+
+class DeliveryNote(TimestampMixin, table=True):
+    __tablename__ = "delivery_notes"  # pyright: ignore
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
+    delivery_note_id: str = Field(unique=True)
+    is_agency_shipment: bool = Field(default=False)
+    issue_date: date
+    pdf_file_path: str
+    zip_file_path: str
+    xml_file_path: str | None
