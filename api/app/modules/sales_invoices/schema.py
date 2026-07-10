@@ -20,13 +20,10 @@ class DocumentOut(BaseModel):
         from_attributes = True
 
 
-# ── Factura: entrada ───────────────────────────────────────────────────────────
-
-
-class SalesInvoiceCreate(BaseModel):
+class SalesInvoiceBase(BaseModel):
     period: str
     serie: str
-    number: int
+    sequential_number: int
     issue_date: date
     customer_ruc: str
     customer_name: str
@@ -34,7 +31,30 @@ class SalesInvoiceCreate(BaseModel):
     total_amount: float
     local_path: str
     is_advance: bool = False
-    status: InvoiceStatus = InvoiceStatus.INCOMPLETE
+    invoice_id: str
+    is_voided: bool = False
+    is_agency_shipment: bool = False
+
+
+class SalesInvoiceCreate(SalesInvoiceBase):
+    pass
+
+
+class SalesInvoiceUpdate(BaseModel):
+    period: str | None = None
+    serie: str | None = None
+    sequential_number: int | None = None
+    issue_date: date | None = None
+    customer_ruc: str | None = None
+    customer_name: str | None = None
+    currency: CurrencyType | None = None
+    total_amount: float | None = None
+    local_path: str | None = None
+    is_advance: bool | None = None
+    invoice_id: str | None = None
+    is_voided: bool | None = None
+    is_agency_shipment: bool | None = None
+    # status: InvoiceStatus = InvoiceStatus.INCOMPLETE
 
 
 # ── Factura: salida (shape que espera el frontend) ────────────────────────────

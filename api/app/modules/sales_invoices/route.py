@@ -1,20 +1,10 @@
 # app/sales_invoices/router.py
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, Form
+from fastapi import APIRouter, Depends, Response, UploadFile, File, Form
 
 from app.modules.sales_invoices.model import DocumentType
-from .schema import SalesInvoiceCreate, SalesInvoiceOut
+from .schema import SalesInvoiceCreate, SalesInvoiceOut, SalesInvoiceUpdate
 from .service import SaleInvoiceService
 from app.core.database import get_session
-from fastapi.responses import JSONResponse
-from app.config import (
-    ALLOWED_EXTENSIONS,
-    STORAGE_PATH,
-    MAX_FILE_SIZE,
-)
-import uuid
-
-from datetime import datetime, timezone
-
 from app.core.auth import get_current_user
 
 router = APIRouter(
@@ -52,25 +42,34 @@ def list_periods(session=Depends(get_session)):
 
 @router.get("/{invoice_id}", response_model=SalesInvoiceOut)
 def get_invoice(invoice_id: str, session=Depends(get_session)):
-    invoice = SaleInvoiceService(session).get_by_id(invoice_id)
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Factura no encontrada")
-    return invoice
+    return SaleInvoiceService(session).get_by_id(invoice_id)
 
 
-@router.get("/search/{invoice_code}", response_model=SalesInvoiceOut)
-def find_invoice(invoice_code: str, session=Depends(get_session)):
-    serie, number = invoice_code.upper().split("-")
+@router.get("/search/{invoice_id}", response_model=SalesInvoiceOut)
+def find_invoice(invoice_id: str, session=Depends(get_session)):
     service = SaleInvoiceService(session)
-    invoice = service.find_by_serie_and_number(serie, int(number))
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Factura no encontrada")
-    return invoice
+    return service.find_by_serie_and_number(invoice_id)
+
+
+@router.put("/{invoice_id}", response_model=SalesInvoiceOut)
+def update_invoice(
+    invoice_id: str, payload: SalesInvoiceUpdate, session=Depends(get_session)
+):
+    service = SaleInvoiceService(session)
+    return service.update(invoice_id, payload)
 
 
 @router.post("", response_model=SalesInvoiceOut, status_code=201)
 def create_invoice(payload: SalesInvoiceCreate, session=Depends(get_session)):
-    return SaleInvoiceService(session).create(payload)
+    service = SaleInvoiceService(session)
+    return service.create(payload)
+
+
+@router.delete("/{invoice_id}", status_code=204)
+def delete_invoice(invoice_id: str, session=Depends(get_session)):
+    service = SaleInvoiceService(session)
+    service.delete_sale_invoice(invoice_id)
+    return Response(status_code=204)
 
 
 @router.post("/upload")
@@ -82,5 +81,4 @@ async def upload_file(
 ):
     service = SaleInvoiceService(session)
     document = await service.upload_file(invoice_id, document_type, file)
-    print(document)
-    return {"document": "creado"}
+    return {"document": document}

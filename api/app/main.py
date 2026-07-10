@@ -1,15 +1,16 @@
+from fastapi.responses import JSONResponse
 from app.core.database import init_db
 from contextlib import asynccontextmanager
 from app.config import STORAGE_PATH
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.modules.sales_invoices.route import router as sales_invoices
 from app.modules.upload.route import router as upload
 from app.modules.auth.route import router as auth
-
+from app.core.errors import AppError
 
 
 @asynccontextmanager
@@ -26,6 +27,16 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(AppError)
+def app_exception_handler(request: Request, exc: AppError):
+    print("errror", AppError)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.code, "message": exc.message, "path": str(request.url)},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

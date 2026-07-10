@@ -27,6 +27,11 @@ class ConflictAppError(AppError):
     code = "CONFLICT"
 
 
+class ResourseAlreadyExistsAppError(AppError):
+    status_code = 409
+    code = "RESOURSE_ALREADY_EXISTS"
+
+
 class DatabaseAppError(AppError):
     status_code = 500
     code = "DATABASE_ERROR"

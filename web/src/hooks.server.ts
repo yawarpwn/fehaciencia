@@ -21,5 +21,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.token = token;
 
 	const response = await resolve(event);
+
+	// Evitar que buscadores indexen la aplicación
+	response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+
 	return response;
 };

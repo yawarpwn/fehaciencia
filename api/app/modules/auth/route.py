@@ -4,7 +4,12 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.core.database import get_session
-from app.core.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from app.core.auth import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    get_current_user,
+)
 from app.modules.auth.model import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
