@@ -11,8 +11,11 @@ def init_db():
         connection.exec_driver_sql("PRAGMA journal_mode=NORMAL")
 
     # IMPORTANTE: Aquí importas tu archivo de modelos para que SQLModel los registre
-    from app.modules.sales_invoices.model import SalesInvoice, SupportingDocument
+    from app.modules.sales_invoices.model import SalesInvoice
     from app.modules.auth.model import User
+    from app.modules.supporting_documents.model import SupportingDocument
+    from app.modules.credit_notes.model import CreditNote
+    from app.modules.delivery_notes.model import DeliveryNote
 
     # Crea las tablas si no existen
     SQLModel.metadata.create_all(engine)
@@ -38,4 +41,3 @@ def init_db():
 def get_session():
     with Session(engine) as session:
         yield session
-

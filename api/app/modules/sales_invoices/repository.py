@@ -1,6 +1,7 @@
 from sqlmodel import Session, select, or_
 from sqlalchemy.orm import selectinload
-from .model import SalesInvoice, SupportingDocument
+from .model import SalesInvoice
+from app.modules.supporting_documents.model import SupportingDocument
 
 
 class SaleInvoiceRepository:
@@ -8,14 +9,14 @@ class SaleInvoiceRepository:
         self.session = session
 
     def _base_query(self, q: str | None = None):
-        query = select(SalesInvoice).options(selectinload(SalesInvoice.documents))
+        query = select(SalesInvoice).options(selectinload(SalesInvoice.documents))  # type: ignore
         if q:
             search_pattern = f"%{q}%"
             query = query.where(
                 or_(
-                    SalesInvoice.invoice_id.like(search_pattern),
-                    SalesInvoice.customer_ruc.like(search_pattern),
-                    SalesInvoice.customer_name.like(search_pattern),
+                    SalesInvoice.invoice_id.like(search_pattern),  # type: ignore
+                    SalesInvoice.customer_ruc.like(search_pattern),  # type: ignore
+                    SalesInvoice.customer_name.like(search_pattern),  # type: ignore
                 )
             )
         return query.order_by(
@@ -30,17 +31,25 @@ class SaleInvoiceRepository:
             query = query.where(SalesInvoice.period == period)
         return list(self.session.exec(query).all())
 
-    def get_by_id(self, invoice_id: str) -> SalesInvoice | None:
-        return self.session.exec(
+    def get_by_id(self, id: str) -> SalesInvoice | None:
+        sqtm = (
             select(SalesInvoice)
-            .options(selectinload(SalesInvoice.documents))
-            .where(SalesInvoice.id == invoice_id)
-        ).first()
+            .where(SalesInvoice.id == id)
+            .options(
+                selectinload(SalesInvoice.credit_notes),  # type: ignore
+                selectinload(SalesInvoice.delivery_notes),  # type: ignore
+            )
+        )
+        return self.session.exec(sqtm).first()
 
     def get_by_invoice_id(self, invoice_id: str) -> SalesInvoice | None:
         return self.session.exec(
             select(SalesInvoice)
-            .options(selectinload(SalesInvoice.documents))
+            .options(
+                selectinload(SalesInvoice.documents),
+                selectinload(SalesInvoice.credit_notes),
+                selectinload(SalesInvoice.delivery_notes),
+            )  # type: ignore
             .where(SalesInvoice.invoice_id == invoice_id)
         ).first()
 

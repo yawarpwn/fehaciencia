@@ -1,19 +1,19 @@
-# app/sales_invoices/models.py
 import uuid
-from datetime import UTC, datetime, date
-from typing import List, Optional
-from sqlmodel import Field, Relationship, SQLModel
+from datetime import date
+from sqlmodel import Field, Relationship
 from sqlalchemy import event
-from .types import CurrencyType, DocumentType
+from typing import TYPE_CHECKING
+from app.core.types import CurrencyType
+from app.core.models import TimestampMixin
+from app.core.utils import utc_now
 
+from app.modules.supporting_documents.model import SupportingDocument
 
-def utc_now() -> datetime:
-    return datetime.now(UTC)
+from app.modules.delivery_notes.model import DeliveryNoteReference
 
-
-class TimestampMixin(SQLModel):
-    created_at: datetime = Field(default_factory=utc_now)
-    updated_at: datetime | None = Field(default=None)
+if TYPE_CHECKING:
+    from app.modules.credit_notes.model import CreditNote
+    from app.modules.delivery_notes.model import DeliveryNote
 
 
 class SalesInvoice(TimestampMixin, table=True):
@@ -32,16 +32,17 @@ class SalesInvoice(TimestampMixin, table=True):
     currency: CurrencyType = Field(default=CurrencyType.PEN)
     total_amount: float
     is_advance: bool = Field(default=False)
-    is_voided: bool = Field(default=False)
     is_credit: bool = Field(default=False)
-    local_path: str  # "202606/VENTAS/E001-1768" — carpeta base en disco
-    pdf_file_path: str | None
-    zip_file_path: str | None
-    xml_file_path: str | None
+    pdf_file_path: str | None = None
+    zip_file_path: str | None = None
+    xml_file_path: str | None = None
+    credit_notes: list["CreditNote"] = Relationship(back_populates="invoice")
 
-    is_agency_shipment: bool = Field(default=False)
+    delivery_notes: list["DeliveryNote"] = Relationship(
+        back_populates="sales_invoices", link_model=DeliveryNoteReference
+    )
 
-    documents: List["SupportingDocument"] = Relationship(
+    documents: list["SupportingDocument"] = Relationship(
         back_populates="invoice",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
@@ -53,44 +54,3 @@ class SalesInvoice(TimestampMixin, table=True):
 @event.listens_for(SalesInvoice, "before_update", propagate=True)
 def _update_invoice_timestamp(mapper, connection, target):
     target.updated_at = utc_now()
-
-
-class SupportingDocument(TimestampMixin, table=True):
-    __tablename__ = "supporting_documents"  # pyright: ignore
-
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
-    document_type: DocumentType
-    file_name: str  # "foto_letrero.jpg"
-    file_path: str  # ruta relativa dentro de DATA_PATH/storage
-    # ej: "202606/VENTAS/E001-1768/foto_letrero.jpg"
-    mime_type: str  # "image/jpeg", "application/pdf"
-    file_size: int  # bytes
-    thumbnail_path: str | None
-
-    invoice: Optional[SalesInvoice] = Relationship(back_populates="documents")
-
-
-class CreditNote(TimestampMixin, table=True):
-    __tablename__ = "credit_notes"  # pyright: ignore
-
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
-    credit_note_id: str = Field(unique=True)
-    issue_date: date
-    pdf_file_path: str
-    zip_file_path: str
-    xml_file_path: str | None
-
-
-class DeliveryNote(TimestampMixin, table=True):
-    __tablename__ = "delivery_notes"  # pyright: ignore
-
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
-    delivery_note_id: str = Field(unique=True)
-    is_agency_shipment: bool = Field(default=False)
-    issue_date: date
-    pdf_file_path: str
-    zip_file_path: str
-    xml_file_path: str | None

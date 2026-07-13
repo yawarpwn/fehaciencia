@@ -8,7 +8,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.modules.sales_invoices.route import router as sales_invoices
-from app.modules.upload.route import router as upload
+from app.modules.credit_notes.route import router as credit_notes
+from app.modules.delivery_notes.route import router as delivery_notes
+
+# from app.modules.upload.route import router as upload
 from app.modules.auth.route import router as auth
 from app.core.errors import AppError
 
@@ -34,7 +37,7 @@ def app_exception_handler(request: Request, exc: AppError):
     print("errror", AppError)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.code, "message": exc.message, "path": str(request.url)},
+        content={"code": exc.code, "message": exc.message, "path": str(request.url)},
     )
 
 
@@ -51,7 +54,8 @@ app.mount("/documents", StaticFiles(directory=STORAGE_PATH), name="documents")
 
 app.include_router(auth)
 app.include_router(sales_invoices)
-app.include_router(upload)
+app.include_router(credit_notes)
+app.include_router(delivery_notes)
 
 
 @app.get("/health")

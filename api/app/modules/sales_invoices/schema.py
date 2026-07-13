@@ -1,20 +1,17 @@
-# app/sales_invoices/schemas.py
 from datetime import date
-from pydantic import BaseModel, computed_field
-from .model import CurrencyType
-from .document_rules import InvoiceStatus
+from pydantic import BaseModel, ConfigDict
+from app.core.types import CurrencyType
+from app.modules.delivery_notes.schema import DeliveryNoteOut
+from app.modules.credit_notes.schema import CreditNoteOut
 
 
 # ── Documentos ────────────────────────────────────────────────────────────────
-
-
 class DocumentOut(BaseModel):
     id: str
-    documentType: str
-    fileName: str
-    uploadedAt: str
-    fileUrl: str
-    thumbnailUrl: str | None = None
+    document_type: str
+    file_name: str
+    file_url: str
+    thumbnail_url: str | None = None
 
     class Config:
         from_attributes = True
@@ -23,17 +20,18 @@ class DocumentOut(BaseModel):
 class SalesInvoiceBase(BaseModel):
     period: str
     serie: str
+    invoice_id: str
     sequential_number: int
     issue_date: date
     customer_ruc: str
     customer_name: str
     currency: CurrencyType = CurrencyType.PEN
     total_amount: float
-    local_path: str
     is_advance: bool = False
-    invoice_id: str
-    is_voided: bool = False
-    is_agency_shipment: bool = False
+    is_credit: bool = False
+    zip_file_path: str | None = None
+    pdf_file_path: str | None = None
+    is_advance: bool = False
 
 
 class SalesInvoiceCreate(SalesInvoiceBase):
@@ -57,33 +55,23 @@ class SalesInvoiceUpdate(BaseModel):
     # status: InvoiceStatus = InvoiceStatus.INCOMPLETE
 
 
-# ── Factura: salida (shape que espera el frontend) ────────────────────────────
-
-
 class SalesInvoiceOut(BaseModel):
     id: str
-    invoiceId: str
+    invoice_id: str
     period: str
-    status: str
-    customerRuc: str
-    customerName: str
-    customerShortName: str
-    totalAmount: float
-    isAdvance: bool
-    isAgencyShipment: bool
-
-    # Documentos agrupados
-    purchaseOrder: DocumentOut | None
-    pdfFile: DocumentOut | None
-    deliveryGuides: list[DocumentOut]
-    agencyGuides: list[DocumentOut]
-    signedDeliveryGuides: list[DocumentOut]
+    customer_ruc: str
+    customer_name: str
+    total_amount: float
+    is_advance: bool
+    issue_date: date
+    # missing: list[str]
+    purchase_order: DocumentOut | None
+    agency_guides: list[DocumentOut]
+    signed_delivery_guides: list[DocumentOut]
+    payment_vouchers: list[DocumentOut]
+    delivery_notes: list[DeliveryNoteOut]
+    credit_notes: list[CreditNoteOut]
     photos: list[DocumentOut]
-    vouchers: list[DocumentOut]
-    creditNote: DocumentOut | None
-    issueDate: str
-    isVoided: bool
-
-    # Estado calculado
-    # isComplete: bool
-    missing: list[str]
+    model_config = ConfigDict(from_attributes=True)
+    pdf_file_path: str | None = None
+    zip_file_path: str | None = None

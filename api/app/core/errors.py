@@ -29,7 +29,7 @@ class ConflictAppError(AppError):
 
 class ResourseAlreadyExistsAppError(AppError):
     status_code = 409
-    code = "RESOURSE_ALREADY_EXISTS"
+    code = "RESOURCE_ALREADY_EXISTS"
 
 
 class DatabaseAppError(AppError):

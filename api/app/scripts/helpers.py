@@ -5,12 +5,12 @@ import mimetypes
 from datetime import datetime
 import shutil
 from app.config import STORAGE_PATH
-from app.modules.sales_invoices.model import (
-    SalesInvoice,
-    SupportingDocument,
-    DocumentType,
-)
+from app.core.types import DocumentType
 from PIL import Image
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.modules.supporting_documents.model import SupportingDocument
 
 NAMESPACES = {
     "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
