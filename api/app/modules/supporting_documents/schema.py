@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from app.modules.sales_invoices.types import DocumentType
+from app.core.types import DocumentType
 
 
 class SupportingDocumentBase(BaseModel):

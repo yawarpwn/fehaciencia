@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, UploadFile, File, Form
 from app.core.database import get_session
 from app.core.auth import get_current_user
-from .schema import SupportingDocumentCreate, SupportingDocumentUpdate, SupportingDocumentOut
+from app.core.types import DocumentType
+from .schema import (
+    SupportingDocumentCreate,
+    SupportingDocumentUpdate,
+    SupportingDocumentOut,
+)
 from .service import SupportingDocumentService
 
 router = APIRouter(
@@ -21,9 +26,21 @@ def get_document(document_id: str, session=Depends(get_session)):
     return SupportingDocumentService(session).get_by_id(document_id)
 
 
-@router.post("", response_model=SupportingDocumentOut, status_code=201)
-def create_document(payload: SupportingDocumentCreate, session=Depends(get_session)):
-    return SupportingDocumentService(session).create(payload)
+@router.post("", status_code=201)
+async def create_document(
+    file: UploadFile = File(...),
+    document_type: DocumentType = Form(...),
+    invoice_id: str = Form(...),
+    session=Depends(get_session),
+):
+
+    content = await file.read()
+    return SupportingDocumentService(session).create(
+        content=content,
+        document_type=document_type,
+        invoice_id=invoice_id,
+        filename=file.filename,
+    )
 
 
 @router.put("/{document_id}", response_model=SupportingDocumentOut)

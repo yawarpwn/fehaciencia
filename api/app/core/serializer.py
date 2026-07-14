@@ -51,6 +51,7 @@ def serialize_delivery_note(doc: DeliveryNote) -> DeliveryNoteOut:
         zip_file_path=doc.zip_file_path,
         xml_file_path=doc.xml_file_path,
         is_agency_shipment=doc.is_agency_shipment,
+        sales_invoices=doc.sales_invoices,
     )
 
 

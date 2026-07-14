@@ -7,10 +7,8 @@ from app.core.errors import (
     ValidationAppError,
 )
 from app.config import STORAGE_PATH
-from app.core.serializer import serialize_credit_note, serialize_delivery_note
+from app.core.serializer import serialize_delivery_note
 from app.core.utils.helpers import get_path, parse_guide_xml_data, store_file
-from app.modules.credit_notes import repository
-from app.modules.sales_invoices import document_rules
 from app.modules.sales_invoices.repository import SaleInvoiceRepository
 from .model import DeliveryNote, DeliveryNoteReference
 from .schema import DeliveryNoteCreate, DeliveryNoteOut, DeliveryNoteUpdate
@@ -26,11 +24,8 @@ class DeliveryNoteService:
     def get_all(self) -> list[DeliveryNote]:
         return self.repository.get_all()
 
-    def get_by_id(self, id: str) -> DeliveryNoteOut:
-        dn = self.repository.get_by_id(id)
-        if not dn:
-            raise NotFoundAppError(f"Guía de remisión con id {id} no encontrada")
-        return serialize_delivery_note(dn)
+    def get_by_id(self, id: str) -> DeliveryNote | None:
+        return self.repository.get_by_id(id)
 
     def get_by_document_id(self, delivery_note_id: str) -> DeliveryNote:
         dn = self.repository.get_by_document_id(delivery_note_id)
@@ -50,22 +45,30 @@ class DeliveryNoteService:
             raise ValidationAppError("No se pudo obtener el nombre del archivo")
 
         delivery_note = self.get_by_id(id)
-        print("delivery_note", delivery_note)
-        # invoice = self.sales_invoices_repo.get_by_id(delivery_note.invoice_id)
 
-        # if delivery_note is None:
-        #     raise NotFoundAppError(f"Nota de crédito {id} no encontrada")
-        #
-        # if invoice is None:
-        #     raise NotFoundAppError(f"Factura {id} no encontrada")
-        #
-        # destination, relative_path = get_path(
-        #     invoice.period, invoice.invoice_id, filename
-        # )
-        # store_file(content, destination, filename)
-        #
-        # self.repository.update(delivery_note, data_dict={"pdf_file_path": relative_path})
-        return {"mee": "mee"}
+        if delivery_note is None:
+            raise NotFoundAppError(f"Guía de remisión {id} no encontrada")
+
+        if delivery_note.pdf_file_path is not None:
+            raise ResourseAlreadyExistsAppError(
+                f"Guía de remisión {delivery_note.document_id} ya tiene un pdf"
+            )
+
+        last_invoice = delivery_note.sales_invoices[-1]
+
+        if not last_invoice:
+            raise NotFoundAppError(
+                f"Factura relacion a  {delivery_note.document_id} no encontrada"
+            )
+
+        destination, relative_path = get_path(
+            last_invoice.period, last_invoice.invoice_id, filename
+        )
+        store_file(content, destination, filename)
+
+        return self.repository.update(
+            delivery_note, data_dict={"pdf_file_path": relative_path}
+        )
 
     def create_from_xml(self, content: bytes, filename: str | None) -> DeliveryNote:
         if filename is None:
@@ -126,10 +129,16 @@ class DeliveryNoteService:
 
     def update(self, delivery_note_id: str, data: DeliveryNoteUpdate) -> DeliveryNote:
         dn = self.get_by_id(delivery_note_id)
+        if dn is None:
+            raise NotFoundAppError(f"Guía de remisión {delivery_note_id} no encontrada")
         return self.repository.update(dn, data.model_dump(exclude_unset=True))
 
     def delete(self, delivery_note_id: str) -> None:
         dn = self.get_by_id(delivery_note_id)
+
+        if dn is None:
+            raise NotFoundAppError(f"Guía de remisión {delivery_note_id} no encontrada")
+
         for path_attr in ["pdf_file_path", "zip_file_path", "xml_file_path"]:
             val = getattr(dn, path_attr)
             if val:

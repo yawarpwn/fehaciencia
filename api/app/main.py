@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.modules.sales_invoices.route import router as sales_invoices
 from app.modules.credit_notes.route import router as credit_notes
 from app.modules.delivery_notes.route import router as delivery_notes
+from app.modules.supporting_documents.route import router as supporting_documents
 
 # from app.modules.upload.route import router as upload
 from app.modules.auth.route import router as auth
@@ -56,6 +57,7 @@ app.include_router(auth)
 app.include_router(sales_invoices)
 app.include_router(credit_notes)
 app.include_router(delivery_notes)
+app.include_router(supporting_documents)
 
 
 @app.get("/health")

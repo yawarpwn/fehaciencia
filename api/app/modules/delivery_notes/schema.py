@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from datetime import date, datetime
 
 from app.modules.sales_invoices.model import SalesInvoice
-from app.modules.sales_invoices.schema import SalesInvoiceOut
 
 
 class DeliveryNoteBase(BaseModel):
@@ -37,7 +36,7 @@ class DeliveryNoteOut(BaseModel):
     pdf_file_path: str | None = None
     zip_file_path: str | None = None
     xml_file_path: str | None = None
-    sale_invoices: list[SalesInvoice]
+    sales_invoices: list[SalesInvoice]
     # created_at: datetime
     # updated_at: datetime | None = None
 
