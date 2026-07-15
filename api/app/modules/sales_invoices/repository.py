@@ -46,9 +46,9 @@ class SaleInvoiceRepository:
         return self.session.exec(
             select(SalesInvoice)
             .options(
-                selectinload(SalesInvoice.documents),
-                selectinload(SalesInvoice.credit_notes),
-                selectinload(SalesInvoice.delivery_notes),
+                selectinload(SalesInvoice.documents),  # type: ignore
+                selectinload(SalesInvoice.credit_notes),  # type: ignore
+                selectinload(SalesInvoice.delivery_notes),  # type: ignore
             )  # type: ignore
             .where(SalesInvoice.invoice_id == invoice_id)
         ).first()

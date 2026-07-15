@@ -26,9 +26,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	externalForm.append('document_type', documentType);
 	externalForm.append('invoice_id', invoiceId);
 
-	const url = `${SERVER_CONFIG.apiUrl}/sales-invoices/upload`;
-	console.log(`Upload url ${url}`);
-	const res = await fetch(`${SERVER_CONFIG.apiUrl}/sales-invoices/upload`, {
+	const res = await fetch(`${SERVER_CONFIG.apiUrl}/supporting-documents`, {
 		method: 'POST',
 		headers: locals.token
 			? {

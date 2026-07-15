@@ -11,16 +11,16 @@ from typing import TypedDict
 from app.config import STORAGE_PATH
 from app.core.types import CurrencyType, DocumentType
 
-SUNAT_TYPES = {
-    DocumentType.INVOICE_ZIP,
-    DocumentType.INVOICE_XML,
-    DocumentType.INVOICE_PDF,
-    DocumentType.DELIVERY_GUIDE_XML,
-    DocumentType.CREDIT_NOTE_XML,
-    DocumentType.CREDIT_NOTE_PDF,
-    DocumentType.CREDIT_NOTE_ZIP,
-    DocumentType.DELIVERY_GUIDE_PDF,
-}
+# SUNAT_TYPES = {
+#     DocumentType.INVOICE_ZIP,
+#     DocumentType.INVOICE_XML,
+#     DocumentType.INVOICE_PDF,
+#     DocumentType.DELIVERY_GUIDE_XML,
+#     DocumentType.CREDIT_NOTE_XML,
+#     DocumentType.CREDIT_NOTE_PDF,
+#     DocumentType.CREDIT_NOTE_ZIP,
+#     DocumentType.DELIVERY_GUIDE_PDF,
+# }
 
 RUC = "20610555536"
 SERIE = "E001"  # por el momento la serie siempre es esta
@@ -47,8 +47,8 @@ def is_prepayment_invoice(root: ET.Element) -> bool:
 
 
 def generate_unique_filename(original_name: str, doc_type: DocumentType) -> str:
-    if doc_type in SUNAT_TYPES:
-        return original_name
+    # if doc_type in SUNAT_TYPES:
+    #     return original_name
 
     ext = Path(original_name).suffix
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
