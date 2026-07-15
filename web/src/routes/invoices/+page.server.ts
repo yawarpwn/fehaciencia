@@ -14,10 +14,27 @@ async function fetchInvoices(
 	if (q) {
 		url.searchParams.set('q', q);
 	}
+
 	const res = await fetch(url.toString(), {
 		headers: token ? { Authorization: `Bearer ${token}` } : {}
 	});
-	const invoices = await res.json();
+
+	const invoices = (await res.json()) as SaleInvoice[];
+
+	// const mapped = invoices.map((invoice) => {
+	//   const documents = [
+	//     ...invoice.photos,
+	//     ...invoice.agency_guides,
+	//     ...invoice.signed_delivery_guides,
+	//     ...invoice.payment_vouchers
+	//   ]
+	//
+	//   return {
+	//     ...invoice,
+	//     documents
+	//   }
+	//
+	//   })
 	const totalHeader = res.headers.get('X-Total-Count');
 	const total = totalHeader ? parseInt(totalHeader, 10) : invoices.length;
 	return { invoices, total };

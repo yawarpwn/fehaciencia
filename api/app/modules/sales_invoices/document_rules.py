@@ -23,7 +23,9 @@ def compute_missing(
     is_agency_shipment: bool,
     has_credit_note: bool,
     is_advance: bool,
+    has_delivery_note: bool,
 ) -> MissingResult:
+
     if has_credit_note:
         return MissingResult(status=InvoiceStatus.VOIDED, missing=[])
 
@@ -34,7 +36,7 @@ def compute_missing(
     requires_fehaciencia = total_amount >= AMOUNT_THRESHOLD
 
     if requires_fehaciencia:
-        if "DELIVERY_GUIDE" not in present_types:
+        if not has_delivery_note:
             missing.append("Guía Remisión")
 
         # Si es envío por agencia, la guía firmada NO es obligatoria

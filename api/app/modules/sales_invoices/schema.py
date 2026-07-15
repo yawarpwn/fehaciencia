@@ -29,8 +29,8 @@ class SalesInvoiceBase(BaseModel):
     total_amount: float
     is_advance: bool = False
     is_credit: bool = False
-    zip_file_path: str | None = None
-    pdf_file_path: str | None = None
+    zip_file_url: str | None = None
+    pdf_file_url: str | None = None
     is_advance: bool = False
 
 
@@ -61,6 +61,7 @@ class SalesInvoiceOut(BaseModel):
     period: str
     customer_ruc: str
     customer_name: str
+    customer_short_name: str
     total_amount: float
     is_advance: bool
     issue_date: date
@@ -73,5 +74,7 @@ class SalesInvoiceOut(BaseModel):
     credit_notes: list[CreditNoteOut]
     photos: list[DocumentOut]
     model_config = ConfigDict(from_attributes=True)
-    pdf_file_path: str | None = None
-    zip_file_path: str | None = None
+    pdf_file_url: str | None = None
+    zip_file_url: str | None = None
+    status: str
+    missing: list[str]

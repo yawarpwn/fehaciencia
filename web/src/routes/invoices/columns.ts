@@ -5,10 +5,14 @@ import { renderComponent, renderSnippet } from '$lib/components/ui/data-table/in
 import DataTableAction from './data-table-action.svelte';
 import SingleDocStatus from '$lib/components/single-doc-status.svelte';
 import MultiDocThumbnails from '@/components/multi-doc-thumbnails.svelte';
-import { MULTI_DOC_META, MULTI_DOC_ORDER } from '$lib/constants';
+import TruckIcon from '@lucide/svelte/icons/truck';
+import FileSignatureIcon from '@lucide/svelte/icons/file-signature';
+import LandMarkIcon from '@lucide/svelte/icons/landmark';
+import ImageOffIcon from '@lucide/svelte/icons/image-off';
 import type { InvoiceStatus, SaleInvoice } from '$lib/types';
 import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
-import FileText from '@lucide/svelte/icons/file';
+import InvoiceLink from '$lib/components/invoice-link.svelte';
+import DeliveryNoteLink from '@/components/delivery_note-link.svelte';
 
 const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
 const dateFormater = new Intl.DateTimeFormat('es-PE', {
@@ -19,24 +23,20 @@ const dateFormater = new Intl.DateTimeFormat('es-PE', {
 export const columns: ColumnDef<SaleInvoice>[] = [
 	{
 		header: 'Factura',
-		accessorKey: 'invoiceId'
+		accessorKey: 'invoice_id',
+		cell: ({ row }) => {
+			return renderComponent(InvoiceLink, { invoice: row.original });
+		}
 	},
 	{
 		accessorKey: 'period',
 		header: 'Periodo'
-
-		// cell: ({ row }) => {
-		// 	const snippet = createRawSnippet<[string]>((getPeriod) => ({
-		// 		render: () => `<span class="capitalize">${formatPeriod(getPeriod())}</span>`
-		// 	}));
-		// 	return renderSnippet(snippet, row.original.period);
-		// }
 	},
 	{
 		id: 'Fecha',
 		header: 'Fecha',
 		cell: ({ row }) => {
-			const issueDate = row.original.issueDate;
+			const issueDate = row.original.issue_date;
 
 			const dateCellSnippet = createRawSnippet<[{ issueDate: string }]>((getIsuue) => {
 				const { issueDate } = getIsuue();
@@ -51,11 +51,11 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		}
 	},
 	{
-		accessorKey: 'customerRuc',
+		accessorKey: 'customer_ruc',
 		header: 'Ruc'
 	},
 	{
-		accessorKey: 'customerShortName',
+		accessorKey: 'customer_short_name',
 		header: 'Cliente'
 	},
 	{
@@ -65,58 +65,77 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 			const amountCellSnippet = createRawSnippet<[{ amount: number }]>((getAmount) => {
 				const { amount } = getAmount();
 				return {
-					render: () => `<div class="text-end font-medium">${formatter.format(amount)}</div>`
+					render: () =>
+						`<div class="text-end font-medium text-sm">${formatter.format(amount)}</div>`
 				};
 			});
-			return renderSnippet(amountCellSnippet, { amount: row.original.totalAmount });
+			return renderSnippet(amountCellSnippet, { amount: row.original.total_amount });
 		}
 	},
 	{
-		id: 'Factura',
-		header: 'FA',
+		id: 'DELIVERY_GUIDE',
+		header: 'GR',
 		cell: ({ row }) => {
-			return renderComponent(SingleDocStatus, {
-				document: row.original.pdfFile,
-				label: 'mee',
-				icon: FileText
+			return renderComponent(DeliveryNoteLink, {
+				deliveryNotes: row.original.delivery_notes
 			});
 		}
 	},
 	{
-		id: 'purchaseOrder',
+		id: 'PURCHASE_ORDER',
 		header: 'OC',
 		cell: ({ row }) => {
 			return renderComponent(SingleDocStatus, {
-				document: row.original.purchaseOrder,
+				fileUrl: row.original.purchase_order?.file_url,
 				label: 'mee',
 				icon: ShoppingCartIcon
 			});
 		}
 	},
-	// Columnas de documentos únicos — generadas dinámicamente desde SINGLE_DOC_ORDER
-	...MULTI_DOC_ORDER.map((docType): ColumnDef<SaleInvoice> => ({
-		id: docType,
-		header: MULTI_DOC_META[docType].shortLabel,
-		meta: { tooltip: MULTI_DOC_META[docType].label }, // para tooltip en el header si lo quieres
+	{
+		id: 'PHOTO',
+		header: 'FT',
 		cell: ({ row }) => {
-			const key = {
-				PHOTO: 'photos',
-				DELIVERY_GUIDE: 'deliveryGuides',
-				AGENCY_GUIDE: 'agencyGuides',
-				DELIVERY_GUIDE_SIGNED: 'signedDeliveryGuides',
-				PAYMENT_VOUCHER: 'vouchers'
-			}[docType] as keyof SaleInvoice;
-
-			const documents = row.original[key] as any;
-
 			return renderComponent(MultiDocThumbnails, {
-				documents: documents,
-				icon: MULTI_DOC_META[docType].icon,
-				invoice: row.original,
-				docType: docType
+				documents: row.original.photos,
+				label: 'mee',
+				icon: ImageOffIcon
 			});
 		}
-	})),
+	},
+	{
+		id: 'DELIVERY_GUIDE_SIGNED',
+		header: 'GF',
+		cell: ({ row }) => {
+			return renderComponent(MultiDocThumbnails, {
+				documents: row.original.signed_delivery_guides,
+				label: 'mee',
+				icon: FileSignatureIcon
+			});
+		}
+	},
+	{
+		id: 'PAYMENT_VOUCHER',
+		header: 'DP',
+		cell: ({ row }) => {
+			return renderComponent(MultiDocThumbnails, {
+				documents: row.original.payment_vouchers,
+				label: 'mee',
+				icon: LandMarkIcon
+			});
+		}
+	},
+	{
+		id: 'AGENCY_GUIDE',
+		header: 'AG',
+		cell: ({ row }) => {
+			return renderComponent(MultiDocThumbnails, {
+				documents: row.original.agency_guides,
+				label: 'mee',
+				icon: TruckIcon
+			});
+		}
+	},
 	{
 		id: 'status',
 		header: 'Estado',
@@ -159,7 +178,7 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 						`<span title="Falta: ${tooltip}" class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-400 cursor-help">${missing[0]}</span>`
 				};
 			});
-			return renderSnippet(snippet, { missing, status });
+			return renderSnippet(snippet, { missing: missing, status: status });
 		}
 	},
 	{

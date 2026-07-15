@@ -168,11 +168,12 @@ def parse_credit_note_zip(content: bytes) -> dict | None:
 
 
 def get_path(period: str, invoice_id: str, filename: str) -> tuple[Path, str]:
-    relative_path = f"{period}/VENTAS/{invoice_id}"
-    file_path = f"{relative_path}/{filename}"
-    destionation = STORAGE_PATH / relative_path
+    relative_path = Path(period) / "VENTAS" / invoice_id
 
-    return (destionation, file_path)
+    destination = STORAGE_PATH / relative_path
+    file_path = (relative_path / filename).as_posix()
+
+    return destination, file_path
 
 
 class DeliveryNoteFromXml(TypedDict):

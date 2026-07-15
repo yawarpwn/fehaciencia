@@ -9,9 +9,9 @@ class DeliveryNoteBase(BaseModel):
     delivery_note_id: str
     is_agency_shipment: bool = False
     issue_date: date
-    pdf_file_path: str
-    zip_file_path: str
-    xml_file_path: str | None = None
+    pdf_file_url: str
+    zip_file_url: str
+    xml_file_url: str | None = None
 
 
 class DeliveryNoteCreate(DeliveryNoteBase):
@@ -23,9 +23,9 @@ class DeliveryNoteUpdate(BaseModel):
     delivery_note_id: str | None = None
     is_agency_shipment: bool | None = None
     issue_date: date | None = None
-    pdf_file_path: str | None = None
-    zip_file_path: str | None = None
-    xml_file_path: str | None = None
+    pdf_file_url: str | None = None
+    zip_file_url: str | None = None
+    xml_file_url: str | None = None
 
 
 class DeliveryNoteOut(BaseModel):
@@ -33,9 +33,9 @@ class DeliveryNoteOut(BaseModel):
     document_id: str
     is_agency_shipment: bool
     issue_date: date
-    pdf_file_path: str | None = None
-    zip_file_path: str | None = None
-    xml_file_path: str | None = None
+    pdf_file_url: str | None = None
+    zip_file_url: str | None = None
+    xml_file_url: str | None = None
     sales_invoices: list[SalesInvoice]
     # created_at: datetime
     # updated_at: datetime | None = None

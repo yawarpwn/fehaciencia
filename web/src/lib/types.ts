@@ -1,4 +1,57 @@
 // src/lib/types.ts
+//
+export type InvoiceDocument = {
+	id: string;
+	invoice_id: string;
+	document_type: DocumentType;
+	file_name: string;
+	file_url: string;
+	mime_type: string;
+	file_size: number;
+	thumbnail_url: string;
+};
+
+export interface SaleInvoice {
+	id: string;
+	invoice_id: string;
+	period: string;
+	customer_ruc: string;
+	customer_name: string;
+	customer_short_name: string;
+	total_amount: number;
+	is_advance: boolean;
+	issue_date: string;
+	purchase_order: InvoiceDocument | null;
+	agency_guides: InvoiceDocument[];
+	signed_delivery_guides: InvoiceDocument[];
+	payment_vouchers: InvoiceDocument[];
+	delivery_notes: DeliveryNote[];
+	credit_notes: InvoiceDocument[];
+	photos: InvoiceDocument[];
+	pdf_file_url: string;
+	zip_file_url: string;
+	missing: string[]; // ej. ["Guía firmada", "Voucher de pago"] — listo para mostrar al usuario
+	status: InvoiceStatus;
+}
+
+export interface AgencyGuide {
+	id: string;
+	document_type: string;
+	file_name: string;
+	file_url: string;
+	thumbnail_url: string;
+}
+
+export interface DeliveryNote {
+	id: string;
+	document_id: string;
+	is_agency_shipment: boolean;
+	issue_date: string;
+	pdf_file_url: string;
+	zip_file_url: string;
+	xml_file_url: string;
+	sales_invoices: SaleInvoice[];
+}
 
 // Documentos únicos (máx. 1 por factura) → columna de icono
 export type SingleDocType = 'PURCHASE_ORDER'; // Orden de compra
@@ -14,43 +67,3 @@ export type MultiDocType =
 export type InvoiceStatus = 'COMPLETE' | 'VOIDED' | 'INCOMPLETE' | 'ADVANCE';
 
 export type DocumentType = SingleDocType | MultiDocType;
-
-export type InvoiceDocument = {
-	id: string;
-	documentType: DocumentType;
-	fileName: string;
-	uploadedAt: string;
-	fileUrl: string;
-	thumbnailUrl?: string; // fotos → miniatura real; vouchers → null (muestra icono PDF)
-};
-
-export type SaleInvoice = {
-	id: string;
-	invoiceId: string; // "E001-1341" — armado en el backend
-	period: string; // "202601"
-	status: InvoiceStatus;
-	customerRuc: string;
-	customerName: string;
-	customerShortName: string;
-	totalAmount: number;
-	creditNote: InvoiceDocument | null;
-	isAdvance: boolean;
-	isAgencyShipment: boolean;
-	isVoided: boolean;
-	issueDate: string;
-
-	// Documentos únicos
-	pdfFile: InvoiceDocument;
-	purchaseOrder: InvoiceDocument | null;
-	deliveryGuides: InvoiceDocument[];
-	agencyGuides: InvoiceDocument[];
-	signedDeliveryGuides: InvoiceDocument[];
-
-	// Documentos múltiples
-	photos: InvoiceDocument[];
-	vouchers: InvoiceDocument[];
-
-	// Calculado en el backend
-	isComplete: boolean;
-	missing: string[]; // ej. ["Guía firmada", "Voucher de pago"] — listo para mostrar al usuario
-};

@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-const API_TARGET = process.env.API_URL || 'http://localhost:7780';
+const API_TARGET = process.env.API_URL || 'http://localhost:8000';
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -17,7 +17,7 @@ export default defineConfig({
 				'@/*': './src/lib/*'
 			},
 			csrf: {
-				checkOrigin: false
+				trustedOrigins: [API_TARGET]
 			}
 		})
 	],

@@ -25,13 +25,13 @@
 		{#each visible as doc (doc.id)}
 			<button
 				type="button"
-				onclick={() => window.open(doc.fileUrl, '_blank')}
-				title={doc.fileName}
+				onclick={() => window.open(doc.file_url, '_blank')}
+				title={doc.file_name}
 				class="size-8 overflow-hidden rounded-md border-2 border-background bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-950 dark:text-green-400
 					hover:z-10 hover:scale-110 transition-transform"
 			>
-				{#if doc.thumbnailUrl}
-					<img src={doc.thumbnailUrl} alt={doc.fileName} class="size-full object-cover" />
+				{#if doc.thumbnail_url}
+					<img src={doc.thumbnail_url} alt={doc.file_name} class="size-full object-cover" />
 				{:else}
 					<!-- PDF u otro archivo sin miniatura visual -->
 					<div class="size-full flex items-center justify-center">
