@@ -13,7 +13,7 @@ export type InvoiceDocument = {
 
 export interface SaleInvoice {
 	id: string;
-	invoice_id: string;
+	document_id: string;
 	period: string;
 	customer_ruc: string;
 	customer_name: string;
@@ -26,7 +26,7 @@ export interface SaleInvoice {
 	signed_delivery_guides: InvoiceDocument[];
 	payment_vouchers: InvoiceDocument[];
 	delivery_notes: DeliveryNote[];
-	credit_notes: InvoiceDocument[];
+	credit_notes: CreditNote[];
 	photos: InvoiceDocument[];
 	pdf_file_url: string;
 	zip_file_url: string;
@@ -51,6 +51,14 @@ export interface DeliveryNote {
 	zip_file_url: string;
 	xml_file_url: string;
 	sales_invoices: SaleInvoice[];
+}
+
+export interface CreditNote {
+	id: string;
+	document_id: string;
+	pdf_file_url: string;
+	zip_file_url: string;
+	xml_file_url: string;
 }
 
 // Documentos únicos (máx. 1 por factura) → columna de icono

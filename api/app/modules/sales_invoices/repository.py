@@ -14,7 +14,7 @@ class SaleInvoiceRepository:
             search_pattern = f"%{q}%"
             query = query.where(
                 or_(
-                    SalesInvoice.invoice_id.like(search_pattern),  # type: ignore
+                    SalesInvoice.document_id.like(search_pattern),  # type: ignore
                     SalesInvoice.customer_ruc.like(search_pattern),  # type: ignore
                     SalesInvoice.customer_name.like(search_pattern),  # type: ignore
                 )
@@ -42,7 +42,7 @@ class SaleInvoiceRepository:
         )
         return self.session.exec(sqtm).first()
 
-    def get_by_invoice_id(self, invoice_id: str) -> SalesInvoice | None:
+    def get_by_document_id(self, document_id: str) -> SalesInvoice | None:
         return self.session.exec(
             select(SalesInvoice)
             .options(
@@ -50,7 +50,7 @@ class SaleInvoiceRepository:
                 selectinload(SalesInvoice.credit_notes),  # type: ignore
                 selectinload(SalesInvoice.delivery_notes),  # type: ignore
             )  # type: ignore
-            .where(SalesInvoice.invoice_id == invoice_id)
+            .where(SalesInvoice.document_id == document_id)
         ).first()
 
     def get_distinct_periods(self) -> list[str]:

@@ -20,7 +20,7 @@ class DocumentOut(BaseModel):
 class SalesInvoiceBase(BaseModel):
     period: str
     serie: str
-    invoice_id: str
+    document_id: str
     sequential_number: int
     issue_date: date
     customer_ruc: str
@@ -29,8 +29,9 @@ class SalesInvoiceBase(BaseModel):
     total_amount: float
     is_advance: bool = False
     is_credit: bool = False
-    zip_file_url: str | None = None
-    pdf_file_url: str | None = None
+    pdf_file_path: str | None = None
+    xml_file_path: str
+    cdr_file_path: str | None = None
     is_advance: bool = False
 
 
@@ -49,7 +50,7 @@ class SalesInvoiceUpdate(BaseModel):
     total_amount: float | None = None
     local_path: str | None = None
     is_advance: bool | None = None
-    invoice_id: str | None = None
+    document_id: str | None = None
     is_voided: bool | None = None
     is_agency_shipment: bool | None = None
     # status: InvoiceStatus = InvoiceStatus.INCOMPLETE
@@ -57,7 +58,7 @@ class SalesInvoiceUpdate(BaseModel):
 
 class SalesInvoiceOut(BaseModel):
     id: str
-    invoice_id: str
+    document_id: str
     period: str
     customer_ruc: str
     customer_name: str
@@ -75,6 +76,6 @@ class SalesInvoiceOut(BaseModel):
     photos: list[DocumentOut]
     model_config = ConfigDict(from_attributes=True)
     pdf_file_url: str | None = None
-    zip_file_url: str | None = None
+    xml_file_url: str
     status: str
     missing: list[str]

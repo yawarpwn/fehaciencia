@@ -34,11 +34,11 @@ def list_invoices(
     return service.get_all(q=q, period=period, status=status)
 
 
-# @router.get("/periods", response_model=list[str])
-# def list_periods(session=Depends(get_session)):
-#     return SaleInvoiceService(session).get_distinct_periods()
-#
-#
+@router.get("/periods", response_model=list[str])
+def list_periods(session=Depends(get_session)):
+    return SaleInvoiceService(session).get_distinct_periods()
+
+
 @router.get(
     "/{id}",
 )
@@ -46,10 +46,10 @@ def get_invoice(id: str, session=Depends(get_session)):
     return SaleInvoiceService(session).get_by_id(id)
 
 
-@router.get("/search/{invoice_id}", response_model=SalesInvoiceOut)
-def find_invoice(invoice_id: str, session=Depends(get_session)):
+@router.get("/search/{document_id}", response_model=SalesInvoiceOut)
+def find_invoice(document_id: str, session=Depends(get_session)):
     service = SaleInvoiceService(session)
-    return service.find_by_serie_and_number(invoice_id)
+    return service.find_by_serie_and_number(document_id)
 
 
 # @router.put("/{id}", response_model=SalesInvoiceOut)
@@ -58,13 +58,13 @@ def find_invoice(invoice_id: str, session=Depends(get_session)):
 #     return service.update(id, payload)
 #
 #
-# @router.patch("/script/{invoice_id}", response_model=SalesInvoiceOut)
-# def update_by_invoice_id(
-#     invoice_id: str, payload: SalesInvoiceUpdate, session=Depends(get_session)
+# @router.patch("/script/{document_id}", response_model=SalesInvoiceOut)
+# def update_by_document_id(
+#     document_id: str, payload: SalesInvoiceUpdate, session=Depends(get_session)
 # ):
 #     print("payload", payload)
 #     service = SaleInvoiceService(session)
-#     return service.update_by_invoice_id(invoice_id, payload)
+#     return service.update_by_document_id(document_id, payload)
 #
 #
 @router.post("", status_code=201, response_model=SalesInvoiceOut)
@@ -77,23 +77,23 @@ async def create_invoice_with_zipfile(
     file: UploadFile = File(...), session=Depends(get_session)
 ):
     content = await file.read()
-    return SaleInvoiceService(session).create_from_zip(content, file.filename)
+    return SaleInvoiceService(session).create_from_zip(content)
 
 
-@router.post("/pdf/{id}", status_code=201)
+@router.post("/pdf/{invoice_id}", status_code=201)
 async def insert_invoice_pdf_file(
-    id: str, file: UploadFile = File(...), session=Depends(get_session)
+    invoice_id: str, file: UploadFile = File(...), session=Depends(get_session)
 ):
     content = await file.read()
-    return SaleInvoiceService(session).insert_pdf(id, content, file.filename)
+    return SaleInvoiceService(session).insert_pdf(invoice_id, content, file.filename)
 
 
 #
 #
-# @router.delete("/{invoice_id}", status_code=204)
-# def delete_invoice(invoice_id: str, session=Depends(get_session)):
+# @router.delete("/{id}", status_code=204)
+# def delete_invoice(id: str, session=Depends(get_session)):
 #     service = SaleInvoiceService(session)
-#     service.delete_sale_invoice(invoice_id)
+#     service.delete_sale_invoice(id)
 #     return Response(status_code=204)
 #
 #

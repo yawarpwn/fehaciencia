@@ -80,7 +80,7 @@ class SupportingDocumentService:
             thumb_image_name = f"thumbnail_{safe_filename}"
 
             destination_thumb, relative_path_thumb = get_path(
-                invoice.period, invoice.invoice_id, thumb_image_name
+                invoice.period, invoice.document_id, thumb_image_name
             )
 
             store_file(
@@ -93,7 +93,7 @@ class SupportingDocumentService:
 
         # guardamos el archivo
         destination, relative_path = get_path(
-            invoice.period, invoice.invoice_id, filename
+            invoice.period, invoice.document_id, filename
         )
 
         store_file(content, destination, filename)

@@ -21,19 +21,17 @@ class CreditNoteService:
     def get_all(self) -> list[CreditNote]:
         return self.repository.get_all()
 
-    def get_by_id(self, credit_note_id: str) -> CreditNote:
-        cn = self.repository.get_by_id(credit_note_id)
+    def get_by_id(self, id: str) -> CreditNote:
+        cn = self.repository.get_by_id(id)
         if not cn:
-            raise NotFoundAppError(
-                f"Nota de crédito con id {credit_note_id} no encontrada"
-            )
+            raise NotFoundAppError(f"Nota de crédito con id {id} no encontrada")
         return cn
 
-    def get_by_credit_note_id(self, credit_note_id: str) -> CreditNote:
-        cn = self.repository.get_by_credit_note_id(credit_note_id)
+    def get_by_document_id(self, document_id: str) -> CreditNote:
+        cn = self.repository.get_by_document_id(document_id)
         print("cn", cn)
         if cn is None:
-            raise NotFoundAppError(f"Nota de crédito {credit_note_id} no encontrada")
+            raise NotFoundAppError(f"Nota de crédito {document_id} no encontrada")
         return cn
 
     def create(self, data: CreditNoteCreate) -> CreditNote:
@@ -55,61 +53,58 @@ class CreditNoteService:
             raise NotFoundAppError(f"Factura {id} no encontrada")
 
         destination, relative_path = get_path(
-            invoice.period, invoice.invoice_id, filename
+            invoice.period, invoice.document_id, filename
         )
         store_file(content, destination, filename)
 
         self.repository.update(credit_note, data_dict={"pdf_file_path": relative_path})
 
-    def create_from_zip(self, content: bytes, filename: str | None):
-        if filename is None:
-            raise ValidationAppError("No se pudo obtener el nombre del archivo")
+    def create_from_zip(self, content: bytes):
 
-        credit_note_from_zip = parse_credit_note_zip(content)
+        parsed = parse_credit_note_zip(content)
 
-        if credit_note_from_zip is None:
-            raise ValidationAppError(f"Error procesando zip {filename}")
+        if parsed is None:
+            raise ValidationAppError("Error procesando Zip de Nota de Crédito")
 
-        # Buscar sale_invoce por id
-        invoice_from_db = self.sales_invoices_repo.get_by_invoice_id(
-            credit_note_from_zip["invoice_id"]
+        cn = parsed.data
+        invoice = self.sales_invoices_repo.get_by_document_id(
+            cn.discrepancy_reference_id
         )
 
-        if invoice_from_db is None:
-            raise NotFoundAppError(
-                f"Factura {credit_note_from_zip['invoice_id']} no encontrada"
-            )
+        if invoice is None:
+            raise NotFoundAppError(f"Factura {cn.document_id} no encontrada")
 
-        exists = self.repository.get_by_credit_note_id(
-            credit_note_from_zip["credit_note_id"]
-        )
-
-        if exists is not None:
+        # Validar si la nota de crédito ya existe
+        if self.repository.get_by_document_id(cn.document_id) is not None:
             raise ResourseAlreadyExistsAppError(
-                f"Nota de credito {credit_note_from_zip['credit_note_id']} ya existe"
+                f"Nota de credito {cn.document_id} ya existe"
             )
 
-        destionation, relative_path = get_path(
-            invoice_from_db.period, invoice_from_db.invoice_id, filename
+        destionation, file_path = get_path(
+            invoice.period,
+            invoice.document_id,
+            parsed.xml_name,
         )
 
-        store_file(content, destionation, filename)
+        store_file(parsed.xml_bytes, destionation, parsed.xml_name)
 
         return self.create(
             CreditNoteCreate(
-                credit_note_id=credit_note_from_zip["credit_note_id"],
-                invoice_id=invoice_from_db.id,
-                zip_file_path=relative_path,
-                issue_date=credit_note_from_zip["issue_date"],
+                document_id=cn.document_id,
+                invoice_id=cn.discrepancy_reference_id,
+                issue_date=cn.issue_date,
+                xml_file_path=file_path,
+                discrepancy_response_code=cn.discrepancy_response_code,
+                discrepancy_description=cn.discrepancy_description,
             ),
         )
 
-    def update(self, credit_note_id: str, data: CreditNoteUpdate) -> CreditNote:
-        cn = self.get_by_id(credit_note_id)
+    def update(self, id: str, data: CreditNoteUpdate) -> CreditNote:
+        cn = self.get_by_id(id)
         return self.repository.update(cn, data.model_dump(exclude_unset=True))
 
-    def delete(self, credit_note_id: str) -> None:
-        cn = self.get_by_id(credit_note_id)
+    def delete(self, id: str) -> None:
+        cn = self.get_by_id(id)
         for path_attr in ["pdf_file_path", "zip_file_path", "xml_file_path"]:
             val = getattr(cn, path_attr)
             if val:

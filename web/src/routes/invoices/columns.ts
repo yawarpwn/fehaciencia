@@ -22,8 +22,8 @@ const dateFormater = new Intl.DateTimeFormat('es-PE', {
 
 export const columns: ColumnDef<SaleInvoice>[] = [
 	{
+		id: 'DOCUMENT_ID',
 		header: 'Factura',
-		accessorKey: 'invoice_id',
 		cell: ({ row }) => {
 			return renderComponent(InvoiceLink, { invoice: row.original });
 		}

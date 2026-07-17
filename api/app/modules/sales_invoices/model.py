@@ -24,7 +24,7 @@ class SalesInvoice(TimestampMixin, table=True):
     )
     period: str = Field(index=True)  # "202606"
     serie: str  # "E001"
-    invoice_id: str = Field(index=True, unique=True)
+    document_id: str = Field(index=True, unique=True)
     sequential_number: int  # 1768
     issue_date: date
     customer_ruc: str = Field(index=True)
@@ -34,8 +34,8 @@ class SalesInvoice(TimestampMixin, table=True):
     is_advance: bool = Field(default=False)
     is_credit: bool = Field(default=False)
     pdf_file_path: str | None = None
-    zip_file_path: str | None = None
-    xml_file_path: str | None = None
+    xml_file_path: str
+    cdr_file_path: str | None = None
     credit_notes: list["CreditNote"] = Relationship(back_populates="invoice")
 
     delivery_notes: list["DeliveryNote"] = Relationship(

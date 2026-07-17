@@ -6,21 +6,11 @@ import magic
 import zipfile
 import xml.etree.ElementTree as ET
 from typing import TypedDict
+from dataclasses import dataclass
 
 # import shutil
 from app.config import STORAGE_PATH
 from app.core.types import CurrencyType, DocumentType
-
-# SUNAT_TYPES = {
-#     DocumentType.INVOICE_ZIP,
-#     DocumentType.INVOICE_XML,
-#     DocumentType.INVOICE_PDF,
-#     DocumentType.DELIVERY_GUIDE_XML,
-#     DocumentType.CREDIT_NOTE_XML,
-#     DocumentType.CREDIT_NOTE_PDF,
-#     DocumentType.CREDIT_NOTE_ZIP,
-#     DocumentType.DELIVERY_GUIDE_PDF,
-# }
 
 RUC = "20610555536"
 SERIE = "E001"  # por el momento la serie siempre es esta
@@ -73,10 +63,17 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class InvoiceFromZip(TypedDict):
+def require(value: str | None, field: str) -> str:
+    if value is None:
+        raise ValueError(f"El campo {field} es obligatorio")
+    return value
+
+
+@dataclass
+class InvoiceData:
     period: str
     serie: str
-    invoice_id: str
+    document_id: str
     sequential_number: int
     issue_date: date
     customer_name: str
@@ -85,13 +82,14 @@ class InvoiceFromZip(TypedDict):
     total_amount: float
 
 
-def require(value: str | None, field: str) -> str:
-    if value is None:
-        raise ValueError(f"El campo {field} es obligatorio")
-    return value
+@dataclass
+class InvoiceFile:
+    xml_name: str
+    xml_bytes: bytes
+    data: InvoiceData
 
 
-def parse_invoice_xml(xml_content: bytes) -> InvoiceFromZip:
+def parse_invoice_data(xml_content: bytes) -> InvoiceData:
 
     root = ET.fromstring(xml_content)
 
@@ -109,15 +107,15 @@ def parse_invoice_xml(xml_content: bytes) -> InvoiceFromZip:
     if missing:
         raise ValueError(f"Campos obligatorios ausentes en XML: {missing}")
 
-    invoice_id = require(raw["full_id"], "full_id")
-    serie, number = invoice_id.split("-")
+    document_id = require(raw["full_id"], "full_id")
+    serie, number = document_id.split("-")
     issue_date = require(raw["issue_date"], "issue_date")
     period = issue_date.replace("-", "")[:6]
 
-    return InvoiceFromZip(
+    return InvoiceData(
         period=period,
         serie=serie,
-        invoice_id=invoice_id,
+        document_id=document_id,
         sequential_number=int(number),
         issue_date=datetime.fromisoformat(issue_date),
         customer_name=require(raw["customer_name"], "customer_name"),
@@ -127,48 +125,90 @@ def parse_invoice_xml(xml_content: bytes) -> InvoiceFromZip:
     )
 
 
-def parse_zip_invoice(content: bytes) -> InvoiceFromZip | None:
+def parse_zip_invoice(content: bytes) -> InvoiceFile | None:
     buffer = io.BytesIO(content)
 
-    if not zipfile.ZipFile(buffer):
+    try:
+        with zipfile.ZipFile(buffer, "r") as z:
+            xml_name = next(
+                (f for f in z.namelist() if f.lower().endswith(".xml")), None
+            )
+            if not xml_name:
+                return None
+
+            xml_bytes = z.read(xml_name)
+            data = parse_invoice_data(z.read(xml_name))
+
+            return InvoiceFile(xml_bytes=xml_bytes, xml_name=xml_name, data=data)
+    except zipfile.BadZipFile:
         return None
 
-    buffer.seek(0)  # defensivo
-    with zipfile.ZipFile(buffer, "r") as z:
-        xml_name = next((f for f in z.namelist() if f.lower().endswith(".xml")), None)
-        if not xml_name:
-            return None
-        return parse_invoice_xml(z.read(xml_name))
+
+@dataclass
+class CreditNoteData:
+    document_id: str
+    issue_date: date
+    discrepancy_reference_id: str
+    discrepancy_response_code: str
+    discrepancy_description: str
 
 
-def _parse_credit_note_xml(xml_content: bytes) -> dict | None:
+@dataclass
+class CreditNoteFile:
+    xml_bytes: bytes
+    xml_name: str
+    data: CreditNoteData
+
+
+def parse_credit_note(xml_content: bytes) -> CreditNoteData:
     root = ET.fromstring(xml_content)
 
     credit_note_id = get_text(root, "cbc:ID")
     issue_date = get_text(root, "cbc:IssueDate")
     invoice_ref_id = get_text(root, ".//cac:InvoiceDocumentReference/cbc:ID")
 
-    invoice_id = require(invoice_ref_id, "invoice_ref_id")
+    invoice_document_id = require(invoice_ref_id, "invoice_ref_id")
     issue_date = require(issue_date, "issue_date")
 
-    return {
-        "credit_note_id": require(credit_note_id, "credit_note_id"),
-        "invoice_id": invoice_id.strip().replace(" ", ""),  # ej. "E001-1820"
-        "issue_date": datetime.fromisoformat(issue_date),
-    }
+    discrepancy_ref_id = get_text(root, ".//cac:DiscrepancyResponse/cbc:ReferenceID")
+    discrepancy_ref_id = require(discrepancy_ref_id, "discrepancy_ref_id")
+    discrepancy_response_code = get_text(
+        root, ".//cac:DiscrepancyResponse/cbc:ResponseCode"
+    )
+    discrepancy_description = get_text(
+        root, ".//cac:DiscrepancyResponse/cbc:Description"
+    )
+
+    return CreditNoteData(
+        document_id=require(credit_note_id, "credit_note_id"),
+        # "invoice_document_id": invoice_document_id.strip().replace(" ", ""),
+        issue_date=datetime.fromisoformat(issue_date),
+        discrepancy_reference_id=discrepancy_ref_id.strip().replace(" ", ""),
+        discrepancy_response_code=require(
+            discrepancy_response_code, "discrepancy_response_code"
+        ),
+        discrepancy_description=require(
+            discrepancy_description, "discrepancy_description"
+        ),
+    )
 
 
-def parse_credit_note_zip(content: bytes) -> dict | None:
+def parse_credit_note_zip(content: bytes) -> CreditNoteFile | None:
+
     buffer = io.BytesIO(content)
     with zipfile.ZipFile(buffer, "r") as z:
         xml_name = next((f for f in z.namelist() if f.lower().endswith(".xml")), None)
         if not xml_name:
             return None
-        return _parse_credit_note_xml(z.read(xml_name))
+
+        xml_bytes = z.read(xml_name)
+        parsed_data = parse_credit_note(xml_bytes)
+
+        return CreditNoteFile(xml_bytes=xml_bytes, xml_name=xml_name, data=parsed_data)
 
 
-def get_path(period: str, invoice_id: str, filename: str) -> tuple[Path, str]:
-    relative_path = Path(period) / "VENTAS" / invoice_id
+def get_path(period: str, document_id: str, filename: str) -> tuple[Path, str]:
+    relative_path = Path(period) / "VENTAS" / document_id
 
     destination = STORAGE_PATH / relative_path
     file_path = (relative_path / filename).as_posix()
@@ -176,14 +216,19 @@ def get_path(period: str, invoice_id: str, filename: str) -> tuple[Path, str]:
     return destination, file_path
 
 
-class DeliveryNoteFromXml(TypedDict):
+def get_file_url(file_path: str) -> str:
+    return f"/documents/{file_path}"
+
+
+@dataclass
+class DeliveryData:
     document_id: str
     issue_date: date
     agency_name: str | None
     invoice_references: list[str]
 
 
-def parse_guide_xml_data(xml_content: bytes) -> DeliveryNoteFromXml:
+def parse_delivery_note(xml_content: bytes) -> DeliveryData:
     root = ET.fromstring(xml_content)
 
     mapping = {
@@ -206,7 +251,7 @@ def parse_guide_xml_data(xml_content: bytes) -> DeliveryNoteFromXml:
     agency_name = raw["agency_name"]
     invoice_references = find_all(root, ".//cac:AdditionalDocumentReference/cbc:ID")
 
-    return DeliveryNoteFromXml(
+    return DeliveryData(
         document_id=document_id,
         issue_date=datetime.fromisoformat(issue_date),
         agency_name=agency_name,

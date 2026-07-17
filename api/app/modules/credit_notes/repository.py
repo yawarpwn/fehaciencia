@@ -9,8 +9,8 @@ class CreditNoteRepository:
     def get_all(self) -> list[CreditNote]:
         return list(self.session.exec(select(CreditNote)).all())
 
-    def get_by_id(self, credit_note_id: str) -> CreditNote | None:
-        return self.session.get(CreditNote, credit_note_id)
+    def get_by_id(self, id: str) -> CreditNote | None:
+        return self.session.get(CreditNote, id)
 
     def get_by_invoice_id(self, invoice_id: str) -> list[CreditNote]:
         return list(
@@ -19,8 +19,8 @@ class CreditNoteRepository:
             ).all()
         )
 
-    def get_by_credit_note_id(self, credit_note_id: str) -> CreditNote | None:
-        stmt = select(CreditNote).where(CreditNote.credit_note_id == credit_note_id)
+    def get_by_document_id(self, document_id: str) -> CreditNote | None:
+        stmt = select(CreditNote).where(CreditNote.document_id == document_id)
         return self.session.exec(stmt).first()
 
     def create(self, credit_note: CreditNote) -> CreditNote:

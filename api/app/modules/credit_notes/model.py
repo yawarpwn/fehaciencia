@@ -1,7 +1,6 @@
 import uuid
-from datetime import date, datetime
-from typing import Optional
-from sqlmodel import Field, Relationship, SQLModel
+from datetime import date
+from sqlmodel import Field, Relationship
 from typing import TYPE_CHECKING
 from app.core.models import TimestampMixin
 
@@ -14,10 +13,13 @@ class CreditNote(TimestampMixin, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     invoice_id: str = Field(foreign_key="sales_invoices.id", index=True)
-    credit_note_id: str = Field(unique=True)
+    document_id: str = Field(unique=True)
     issue_date: date
     pdf_file_path: str | None = None
-    zip_file_path: str | None = None
-    xml_file_path: str | None = None
+    xml_file_path: str
+    cdr_file_path: str | None = None
+    # discrepancy_reference_id: str
+    discrepancy_response_code: str
+    discrepancy_description: str
 
     invoice: "SalesInvoice" = Relationship(back_populates="credit_notes")

@@ -8,7 +8,7 @@ from app.core.errors import (
 )
 from app.config import STORAGE_PATH
 from app.core.serializer import serialize_delivery_note
-from app.core.utils.helpers import get_path, parse_guide_xml_data, store_file
+from app.core.utils.helpers import get_path, parse_delivery_note, store_file
 from app.modules.sales_invoices.repository import SaleInvoiceRepository
 from .model import DeliveryNote, DeliveryNoteReference
 from .schema import DeliveryNoteCreate, DeliveryNoteOut, DeliveryNoteUpdate
@@ -62,7 +62,7 @@ class DeliveryNoteService:
             )
 
         destination, relative_path = get_path(
-            last_invoice.period, last_invoice.invoice_id, filename
+            last_invoice.period, last_invoice.document_id, filename
         )
         store_file(content, destination, filename)
 
@@ -74,45 +74,45 @@ class DeliveryNoteService:
         if filename is None:
             raise ValidationAppError("No se pudo obtener el nombre del archivo")
 
-        data = parse_guide_xml_data(content)
+        dn = parse_delivery_note(content)
 
-        guide_document_id = data["document_id"]
-
-        if self.repository.get_by_document_id(guide_document_id):
-            print("aca nunca entra")
+        if self.repository.get_by_document_id(dn.document_id):
             raise ResourseAlreadyExistsAppError(
-                f"Guía de remisión {guide_document_id} ya existe"
+                f"Guía de remisión {dn.document_id} ya existe"
             )
 
         delivery_note_id = str(uuid.uuid4())
         xml_file_path = None
-
         invoices = []
 
-        for invoice_document_id in data["invoice_references"]:
-            invoice = self.sale_invoice_repo.get_by_invoice_id(invoice_document_id)
+        for invoice_document_id in dn.invoice_references:
+            invoice = self.sale_invoice_repo.get_by_document_id(invoice_document_id)
 
             if invoice is None:
                 raise NotFoundAppError(f"Factura {invoice_document_id} no encontrada")
 
             invoices.append(invoice)
 
-        if invoices:
-            destination, relative_path = get_path(
-                invoices[0].period,
-                invoices[0].invoice_id,
-                filename,
+        if len(invoices) == 0:
+            raise ValidationAppError(
+                "No se encontraron facturas relacionadas a la guía de remisión"
             )
 
-            store_file(content, destination, filename)
-            xml_file_path = relative_path
+        destination, file_path = get_path(
+            invoices[0].period,
+            invoices[0].document_id,
+            filename,
+        )
+
+        store_file(content, destination, filename)
+        xml_file_path = file_path
 
         delivery_note = self.repository.create(
             DeliveryNote(
                 id=delivery_note_id,
-                document_id=guide_document_id,
-                issue_date=data["issue_date"],
-                is_agency_shipment=bool(data["agency_name"]),
+                document_id=dn.document_id,
+                issue_date=dn.issue_date,
+                is_agency_shipment=bool(dn.agency_name),
                 xml_file_path=xml_file_path,
             )
         )

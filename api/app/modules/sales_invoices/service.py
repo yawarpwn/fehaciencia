@@ -5,7 +5,6 @@ from app.core.errors import (
     NotFoundAppError,
     ResourseAlreadyExistsAppError,
     ValidationAppError,
-    ConflictAppError,
 )
 from app.core.utils import (
     detect_mime_type,
@@ -81,78 +80,76 @@ class SaleInvoiceService:
     def get_distinct_periods(self) -> list[str]:
         return self.repository.get_distinct_periods()
 
-    def get_by_id(self, invoice_id: str) -> SalesInvoiceOut:
-        invoice = self._get_entity_by_id(invoice_id)
+    def get_by_id(self, id: str) -> SalesInvoiceOut:
+        invoice = self._get_entity_by_id(id)
         return serialize_invoice(invoice)
 
-    def get_by_invoice_id(self, invoice_id: str) -> SalesInvoiceOut:
-        invoice = self.repository.get_by_invoice_id(invoice_id)
+    def get_by_document_id(self, document_id: str) -> SalesInvoiceOut:
+        invoice = self.repository.get_by_document_id(document_id)
         if invoice is None:
-            raise NotFoundAppError(f"Factura {invoice_id} no encontrada")
+            raise NotFoundAppError(f"Factura {document_id} no encontrada")
         return serialize_invoice(invoice)
 
-    def find_by_serie_and_number(self, invoice_id: str) -> SalesInvoiceOut:
-        invoice = self.repository.get_by_invoice_id(invoice_id)
+    def find_by_serie_and_number(self, document_id: str) -> SalesInvoiceOut:
+        invoice = self.repository.get_by_document_id(document_id)
         if invoice is None:
-            raise NotFoundAppError(f"Factura {invoice_id} no encontrada")
+            raise NotFoundAppError(f"Factura {document_id} no encontrada")
         return serialize_invoice(invoice)
 
     def create(self, data: SalesInvoiceCreate) -> SalesInvoiceOut:
-        exists = self.repository.get_by_invoice_id(data.invoice_id)
+        exists = self.repository.get_by_document_id(data.document_id)
         if exists is not None:
-            raise ResourseAlreadyExistsAppError(f"Factura {data.invoice_id} ya existe")
+            raise ResourseAlreadyExistsAppError(f"Factura {data.document_id} ya existe")
 
         invoice = SalesInvoice(**data.model_dump())
         created_invoice = self.repository.create(invoice)
         return serialize_invoice(created_invoice)
 
-    def create_from_zip(self, content: bytes, filename: str | None):
-        if filename is None:
-            raise ValidationAppError("No se pudo obtener el nombre del archivo")
+    def create_from_zip(self, content: bytes):
+        parsed = parse_zip_invoice(content)
 
-        data_from_zip = parse_zip_invoice(content)
+        if parsed is None:
+            raise ValidationAppError("Error procesando zip de factura")
 
-        if data_from_zip is None:
-            raise ValidationAppError(f"Error procesando zip {filename}")
+        iv = parsed.data
 
         # Validar si la factura ya existe
-        invoice_from_db = self.repository.get_by_invoice_id(data_from_zip["invoice_id"])
-        if invoice_from_db is not None:
-            raise ResourseAlreadyExistsAppError(
-                f"Factura {data_from_zip['invoice_id']} ya existe"
-            )
+        if self.repository.get_by_document_id(iv.document_id) is not None:
+            raise ResourseAlreadyExistsAppError(f"Factura {iv.document_id} ya existe")
 
-        destination, relative_path = get_path(
-            data_from_zip["period"], data_from_zip["invoice_id"], filename
-        )
+        destination, file_path = get_path(iv.period, iv.document_id, parsed.xml_name)
 
         # Guarda en disco
-        store_file(content, destination, filename)
+        store_file(parsed.xml_bytes, destination, parsed.xml_name)
 
-        # Guarda en BD
-        self.repository.create(
-            SalesInvoice(
-                **data_from_zip,
-                zip_file_path=relative_path,
+        return self.create(
+            SalesInvoiceCreate(
+                document_id=iv.document_id,
+                period=iv.period,
+                xml_file_path=file_path,
+                issue_date=iv.issue_date,
+                serie=iv.serie,
+                customer_name=iv.customer_name,
+                customer_ruc=iv.customer_ruc,
+                sequential_number=iv.sequential_number,
+                total_amount=iv.total_amount,
             )
         )
 
-    def insert_pdf(self, id: str, content: bytes, filename: str | None):
+    def insert_pdf(self, invoice_id: str, content: bytes, filename: str | None):
 
         if filename is None:
             raise ValidationAppError("No se pudo obtener el nombre del archivo")
 
-        invoice = self.repository.get_by_id(id)
+        invoice = self.repository.get_by_id(invoice_id)
 
         if invoice is None:
-            raise NotFoundAppError(f"Factura {id} no encontrada")
+            raise NotFoundAppError(f"Factura {invoice_id} no encontrada")
 
-        destination, relative_path = get_path(
-            invoice.period, invoice.invoice_id, filename
-        )
+        destination, file_path = get_path(invoice.period, invoice.document_id, filename)
         store_file(content, destination, filename)
 
-        self.repository.update(invoice, data_dict={"pdf_file_path": relative_path})
+        self.repository.update(invoice, data_dict={"pdf_file_path": file_path})
 
     def update(self, id: str, data: SalesInvoiceUpdate) -> SalesInvoiceOut:
         invoice = self._get_entity_by_id(id)
@@ -170,21 +167,21 @@ class SaleInvoiceService:
         )
         return serialize_invoice(updated_invoice)
 
-    def update_by_invoice_id(
-        self, invoice_id: str, data: SalesInvoiceUpdate
+    def update_by_document_id(
+        self, document_id: str, data: SalesInvoiceUpdate
     ) -> SalesInvoiceOut:
-        invoice = self.repository.get_by_invoice_id(invoice_id=invoice_id)
+        invoice = self.repository.get_by_document_id(document_id=document_id)
 
         if invoice is None:
-            raise NotFoundAppError(f"Factura con id {invoice_id} no encontrada")
+            raise NotFoundAppError(f"Factura con id {document_id} no encontrada")
 
         updated_invoice = self.repository.update(
             invoice, data.model_dump(exclude_unset=True)
         )
         return serialize_invoice(updated_invoice)
 
-    def delete_sale_invoice(self, invoice_id: str) -> None:
-        invoice = self._get_entity_by_id(invoice_id)
+    def delete_sale_invoice(self, id: str) -> None:
+        invoice = self._get_entity_by_id(id)
 
         # Borrar archivos físicos del almacenamiento
         # if invoice.local_path:
@@ -228,7 +225,7 @@ class SaleInvoiceService:
             original_name=original_name, doc_type=document_type
         )
 
-        relative_path = f"{invoice.period}/VENTAS/{invoice.invoice_id}"
+        relative_path = f"{invoice.period}/VENTAS/{invoice.document_id}"
         destination = STORAGE_PATH / relative_path
 
         if document_type == DocumentType.INVOICE_PDF:

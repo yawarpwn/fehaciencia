@@ -21,9 +21,9 @@ def get_credit_note(id: str, session=Depends(get_session)):
     return CreditNoteService(session).get_by_id(id)
 
 
-@router.get("/search/{credit_note_id}", response_model=CreditNoteOut)
-def search_credit_note(credit_note_id: str, session=Depends(get_session)):
-    return CreditNoteService(session).get_by_credit_note_id(credit_note_id)
+@router.get("/search/{document_id}", response_model=CreditNoteOut)
+def search_credit_note(document_id: str, session=Depends(get_session)):
+    return CreditNoteService(session).get_by_document_id(document_id)
 
 
 @router.post("", response_model=CreditNoteOut, status_code=201)
@@ -36,7 +36,7 @@ async def create_invoice_with_zipfile(
     file: UploadFile = File(...), session=Depends(get_session)
 ):
     content = await file.read()
-    return CreditNoteService(session).create_from_zip(content, file.filename)
+    return CreditNoteService(session).create_from_zip(content)
 
 
 @router.post("/pdf/{id}", status_code=201)
@@ -47,14 +47,14 @@ async def insert_invoice_pdf_file(
     return CreditNoteService(session).insert_pdf(id, content, file.filename)
 
 
-@router.put("/{credit_note_id}", response_model=CreditNoteOut)
+@router.put("/{id}", response_model=CreditNoteOut)
 def update_credit_note(
-    credit_note_id: str, payload: CreditNoteUpdate, session=Depends(get_session)
+    id: str, payload: CreditNoteUpdate, session=Depends(get_session)
 ):
-    return CreditNoteService(session).update(credit_note_id, payload)
+    return CreditNoteService(session).update(id, payload)
 
 
-@router.delete("/{credit_note_id}", status_code=204)
-def delete_credit_note(credit_note_id: str, session=Depends(get_session)):
-    CreditNoteService(session).delete(credit_note_id)
+@router.delete("/{id}", status_code=204)
+def delete_credit_note(id: str, session=Depends(get_session)):
+    CreditNoteService(session).delete(id)
     return Response(status_code=204)
