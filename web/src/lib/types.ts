@@ -17,6 +17,7 @@ export interface SaleInvoice {
 	period: string;
 	customer_ruc: string;
 	customer_name: string;
+	currency: string;
 	customer_short_name: string;
 	total_amount: number;
 	is_advance: boolean;

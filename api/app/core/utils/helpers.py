@@ -1,11 +1,9 @@
 import io
 from pathlib import Path
 from datetime import datetime, UTC, date
-from typing import BinaryIO
 import magic
 import zipfile
 import xml.etree.ElementTree as ET
-from typing import TypedDict
 from dataclasses import dataclass
 
 # import shutil
@@ -218,6 +216,128 @@ def get_path(period: str, document_id: str, filename: str) -> tuple[Path, str]:
 
 def get_file_url(file_path: str) -> str:
     return f"/documents/{file_path}"
+
+
+def parse_despatch_advice(xml_content: bytes) -> dict:
+    root = ET.fromstring(xml_content)
+
+    # --- Identificación del documento ---
+    document_id = get_text(root, "cbc:ID")
+    issue_date = get_text(root, "cbc:IssueDate")
+    issue_time = get_text(root, "cbc:IssueTime")
+    despatch_type_code = get_text(
+        root, "cbc:DespatchAdviceTypeCode"
+    )  # Catálogo 01 (09 = Guía Remitente)
+    note = get_text(root, "cbc:Note")
+
+    # --- Documento relacionado (ej. Factura) ---
+    related_doc_id = get_text(root, ".//cac:AdditionalDocumentReference/cbc:ID")
+    related_doc_type_code = get_text(
+        root, ".//cac:AdditionalDocumentReference/cbc:DocumentTypeCode"
+    )
+    related_doc_type = get_text(
+        root, ".//cac:AdditionalDocumentReference/cbc:DocumentType"
+    )
+    related_doc_issuer_ruc = get_text(
+        root, ".//cac:AdditionalDocumentReference//cac:IssuerParty//cbc:ID"
+    )
+
+    # --- Remitente (emisor) ---
+    supplier_ruc = get_text(root, ".//cac:DespatchSupplierParty//cbc:ID")
+    supplier_name = get_text(root, ".//cac:DespatchSupplierParty//cbc:RegistrationName")
+
+    # --- Destinatario ---
+    customer_id = get_text(root, ".//cac:DeliveryCustomerParty//cbc:ID")
+    customer_name = get_text(root, ".//cac:DeliveryCustomerParty//cbc:RegistrationName")
+
+    # --- Datos del traslado (Shipment) ---
+    shipment_id = get_text(root, ".//cac:Shipment/cbc:ID")
+    handling_code = get_text(
+        root, ".//cac:Shipment/cbc:HandlingCode"
+    )  # Catálogo 20 (motivo traslado)
+    handling_instructions = get_text(root, ".//cac:Shipment/cbc:HandlingInstructions")
+    gross_weight = get_text(root, ".//cac:Shipment/cbc:GrossWeightMeasure")
+    gross_weight_unit = None
+    gw_el = root.find(".//cac:Shipment/cbc:GrossWeightMeasure", NS)
+    if gw_el is not None:
+        gross_weight_unit = gw_el.get("unitCode")
+
+    # --- Modalidad de traslado y transportista ---
+    transport_mode_code = get_text(
+        root, ".//cac:ShipmentStage/cbc:TransportModeCode"
+    )  # Catálogo 18
+    carrier_ruc = get_text(root, ".//cac:CarrierParty//cbc:ID")
+    carrier_name = get_text(root, ".//cac:CarrierParty//cbc:RegistrationName")
+    carrier_mtc_registration = get_text(root, ".//cac:CarrierParty//cbc:CompanyID")
+    loading_date = get_text(root, ".//cac:LoadingTransportEvent/cbc:OccurrenceDate")
+
+    # --- Direcciones (partida / llegada) ---
+    delivery_ubigeo = get_text(root, ".//cac:DeliveryAddress/cbc:ID")
+    delivery_address = get_text(
+        root, ".//cac:DeliveryAddress//cac:AddressLine/cbc:Line"
+    )
+
+    despatch_ubigeo = get_text(root, ".//cac:DespatchAddress/cbc:ID")
+    despatch_address = get_text(
+        root, ".//cac:DespatchAddress//cac:AddressLine/cbc:Line"
+    )
+
+    # --- Detalle de ítems trasladados ---
+    lines = []
+    for line in root.findall("cac:DespatchLine", NS):
+        qty_el = line.find("cbc:DeliveredQuantity", NS)
+        lines.append(
+            {
+                "line_id": get_text(line, "cbc:ID"),
+                "delivered_quantity": qty_el.text if qty_el is not None else None,
+                "unit_code": qty_el.get("unitCode") if qty_el is not None else None,
+                "order_line_ref": get_text(
+                    line, ".//cac:OrderLineReference/cbc:LineID"
+                ),
+                "item_description": get_text(line, ".//cac:Item/cbc:Description"),
+                "item_seller_id": get_text(
+                    line, ".//cac:Item//cac:SellersItemIdentification/cbc:ID"
+                ),
+            }
+        )
+
+    return {
+        # Documento
+        "document_id": require(document_id, "document_id"),
+        "issue_date": datetime.fromisoformat(require(issue_date, "issue_date")),
+        "issue_time": issue_time,
+        "despatch_type_code": despatch_type_code,
+        "note": note,
+        # Documento relacionado
+        "related_document_id": related_doc_id,
+        "related_document_type_code": related_doc_type_code,
+        "related_document_type": related_doc_type,
+        "related_document_issuer_ruc": related_doc_issuer_ruc,
+        # Remitente / Destinatario
+        "supplier_ruc": supplier_ruc,
+        "supplier_name": supplier_name,
+        "customer_id": customer_id,
+        "customer_name": customer_name,
+        # Traslado
+        "shipment_id": shipment_id,
+        "handling_code": handling_code,
+        "handling_instructions": handling_instructions,
+        "gross_weight": gross_weight,
+        "gross_weight_unit": gross_weight_unit,
+        "transport_mode_code": transport_mode_code,
+        "loading_date": loading_date,
+        # Transportista
+        "carrier_ruc": carrier_ruc,
+        "carrier_name": carrier_name,
+        "carrier_mtc_registration": carrier_mtc_registration,
+        # Direcciones
+        "despatch_ubigeo": despatch_ubigeo,
+        "despatch_address": despatch_address,
+        "delivery_ubigeo": delivery_ubigeo,
+        "delivery_address": delivery_address,
+        # Detalle
+        "lines": lines,
+    }
 
 
 @dataclass

@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "bcrypt>=5.0.0",
+  "argon2-cffi>=25.1.0",
   "fastapi>=0.137.1",
   "opencv-python>=4.13.0.92",
   "pillow>=12.3.0",

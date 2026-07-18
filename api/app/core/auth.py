@@ -1,7 +1,8 @@
 # app/core/auth.py
 from datetime import datetime, timedelta, UTC
 from typing import Generator
-import bcrypt
+from argon2 import PasswordHasher
+from argon2.exceptions import VerificationError
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -13,20 +14,18 @@ from app.modules.auth.model import User
 
 security = HTTPBearer()
 
+ph = PasswordHasher()
 
-def get_password_hash(password: str) -> str:
-    """Hash a password using bcrypt."""
-    pwd_bytes = password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(pwd_bytes, salt)
-    return hashed.decode("utf-8")
+
+def hash_password(password: str) -> str:
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash."""
-    pwd_bytes = plain_password.encode("utf-8")
-    hashed_bytes = hashed_password.encode("utf-8")
-    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+    try:
+        return ph.verify(hashed_password, plain_password)
+    except VerificationError:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

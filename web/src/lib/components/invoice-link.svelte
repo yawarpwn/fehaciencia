@@ -2,7 +2,6 @@
 	import type { SaleInvoice } from '@/types';
 	import Button from './ui/button/button.svelte';
 	const { invoice }: { invoice: SaleInvoice } = $props();
-	console.log(invoice);
 </script>
 
 <Button

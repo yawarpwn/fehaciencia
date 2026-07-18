@@ -125,6 +125,7 @@ class SaleInvoiceService:
         return self.create(
             SalesInvoiceCreate(
                 document_id=iv.document_id,
+                currency=iv.currency,
                 period=iv.period,
                 xml_file_path=file_path,
                 issue_date=iv.issue_date,

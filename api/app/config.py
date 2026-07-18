@@ -14,8 +14,6 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf", ".webp", ".heic", ".zip",
 STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-BASE_URL = "http://localhost:7780"
-
 # JWT & Authentication settings
 JWT_SECRET_KEY = os.getenv(
     "JWT_SECRET_KEY", "super-secret-key-for-tell-docs-development-123456789"

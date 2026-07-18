@@ -29,7 +29,7 @@ class SalesInvoice(TimestampMixin, table=True):
     issue_date: date
     customer_ruc: str = Field(index=True)
     customer_name: str
-    currency: CurrencyType = Field(default=CurrencyType.PEN)
+    currency: CurrencyType
     total_amount: float
     is_advance: bool = Field(default=False)
     is_credit: bool = Field(default=False)

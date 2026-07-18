@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, create_engine, Session, select
 from app.config import DATABASE_URL
+from app.modules.auth.model import Role
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
@@ -21,7 +22,7 @@ def init_db():
     SQLModel.metadata.create_all(engine)
 
     # Crear usuario por defecto si no hay usuarios en la base de datos
-    from app.core.auth import get_password_hash
+    from app.core.auth import hash_password
     from app.config import DEFAULT_ADMIN_PASSWORD
 
     with Session(engine) as session:
@@ -29,9 +30,10 @@ def init_db():
         if not existing_user:
             print("Creando usuario administrador por defecto...")
             admin_user = User(
-                username="admin",
-                hashed_password=get_password_hash(DEFAULT_ADMIN_PASSWORD),
+                username="telladmin0710",
+                hashed_password=hash_password(DEFAULT_ADMIN_PASSWORD),
                 full_name="Administrador",
+                role=Role.ADMIN,
             )
             session.add(admin_user)
             session.commit()

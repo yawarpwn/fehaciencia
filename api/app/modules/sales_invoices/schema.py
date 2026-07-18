@@ -25,7 +25,7 @@ class SalesInvoiceBase(BaseModel):
     issue_date: date
     customer_ruc: str
     customer_name: str
-    currency: CurrencyType = CurrencyType.PEN
+    currency: CurrencyType
     total_amount: float
     is_advance: bool = False
     is_credit: bool = False
@@ -62,6 +62,7 @@ class SalesInvoiceOut(BaseModel):
     period: str
     customer_ruc: str
     customer_name: str
+    currency: CurrencyType
     customer_short_name: str
     total_amount: float
     is_advance: bool

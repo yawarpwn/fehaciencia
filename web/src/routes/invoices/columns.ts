@@ -14,7 +14,8 @@ import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
 import InvoiceLink from '$lib/components/invoice-link.svelte';
 import DeliveryNoteLink from '@/components/delivery_note-link.svelte';
 
-const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+const formatter = (currency: string | undefined) =>
+	new Intl.NumberFormat('es-PE', { style: 'currency', currency: currency });
 const dateFormater = new Intl.DateTimeFormat('es-PE', {
 	day: '2-digit',
 	month: '2-digit'
@@ -64,9 +65,9 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		cell: ({ row }) => {
 			const amountCellSnippet = createRawSnippet<[{ amount: number }]>((getAmount) => {
 				const { amount } = getAmount();
+				const fm = formatter(row.original.currency);
 				return {
-					render: () =>
-						`<div class="text-end font-medium text-sm">${formatter.format(amount)}</div>`
+					render: () => `<div class="text-end font-medium text-sm">${fm.format(amount)}</div>`
 				};
 			});
 			return renderSnippet(amountCellSnippet, { amount: row.original.total_amount });

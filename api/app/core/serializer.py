@@ -63,6 +63,7 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         id=invoice.id,
         document_id=invoice.document_id,
         period=invoice.period,
+        currency=invoice.currency,
         customer_ruc=invoice.customer_ruc,
         customer_name=invoice.customer_name,
         customer_short_name=short_name,

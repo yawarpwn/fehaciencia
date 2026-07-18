@@ -8,7 +8,12 @@ from app.core.errors import (
 )
 from app.config import STORAGE_PATH
 from app.core.serializer import serialize_delivery_note
-from app.core.utils.helpers import get_path, parse_delivery_note, store_file
+from app.core.utils.helpers import (
+    get_path,
+    parse_delivery_note,
+    store_file,
+    parse_despatch_advice,
+)
 from app.modules.sales_invoices.repository import SaleInvoiceRepository
 from .model import DeliveryNote, DeliveryNoteReference
 from .schema import DeliveryNoteCreate, DeliveryNoteOut, DeliveryNoteUpdate

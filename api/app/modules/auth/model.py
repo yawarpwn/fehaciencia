@@ -2,6 +2,13 @@
 import uuid
 from typing import Optional
 from sqlmodel import Field, SQLModel
+from enum import Enum
+
+
+class Role(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+    VIEWER = "viewer"
 
 
 class User(SQLModel, table=True):
@@ -14,3 +21,4 @@ class User(SQLModel, table=True):
     hashed_password: str = Field(nullable=False)
     full_name: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True)
+    role: Role = Field(default=Role.VIEWER)
