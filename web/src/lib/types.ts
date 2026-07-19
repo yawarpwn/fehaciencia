@@ -33,6 +33,7 @@ export interface SaleInvoice {
 	zip_file_url: string;
 	missing: string[]; // ej. ["Guía firmada", "Voucher de pago"] — listo para mostrar al usuario
 	status: InvoiceStatus;
+	payment_method: string;
 }
 
 export interface AgencyGuide {

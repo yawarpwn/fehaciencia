@@ -67,7 +67,7 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 				const { amount } = getAmount();
 				const fm = formatter(row.original.currency);
 				return {
-					render: () => `<div class="text-end font-medium text-sm">${fm.format(amount)}</div>`
+					render: () => `<div class="text-end  text-sm">${fm.format(amount)}</div>`
 				};
 			});
 			return renderSnippet(amountCellSnippet, { amount: row.original.total_amount });
@@ -141,17 +141,18 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 		id: 'status',
 		header: 'Estado',
 		cell: ({ row }) => {
-			const { missing, status } = row.original;
+			const { missing, status, payment_method } = row.original;
 
 			const snippet = createRawSnippet<
 				[
 					{
 						missing: string[];
 						status: InvoiceStatus;
+						paymentMethod: string;
 					}
 				]
 			>((getData) => {
-				const { missing, status } = getData();
+				const { missing, status, paymentMethod } = getData();
 
 				if (status === 'VOIDED') {
 					return {
@@ -170,7 +171,7 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 				if (status === 'COMPLETE') {
 					return {
 						render: () =>
-							`<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">Completo</span>`
+							`<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">Completo`
 					};
 				}
 				const tooltip = missing.join(', ');
@@ -179,7 +180,24 @@ export const columns: ColumnDef<SaleInvoice>[] = [
 						`<span title="Falta: ${tooltip}" class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-400 cursor-help">${missing[0]}</span>`
 				};
 			});
-			return renderSnippet(snippet, { missing: missing, status: status });
+			return renderSnippet(snippet, {
+				missing: missing,
+				status: status,
+				paymentMethod: payment_method
+			});
+		}
+	},
+	{
+		id: 'paymentMethod',
+		cell: ({ row }) => {
+			const amountCellSnippet = createRawSnippet<[{ paymentMethod: string }]>((getAmount) => {
+				const { paymentMethod } = getAmount();
+				const color = paymentMethod === 'Credito' ? 'bg-orange-500' : 'bg-green-500';
+				return {
+					render: () => `<span class='size-1 rounded-full inline-block ${color}'></span>`
+				};
+			});
+			return renderSnippet(amountCellSnippet, { paymentMethod: row.original.payment_method });
 		}
 	},
 	{

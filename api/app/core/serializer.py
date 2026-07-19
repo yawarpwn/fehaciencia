@@ -83,4 +83,5 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         xml_file_url=get_file_url(invoice.xml_file_path),
         missing=result.missing,
         status=result.status,
+        payment_method=invoice.payment_method,
     )

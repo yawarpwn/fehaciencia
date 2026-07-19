@@ -73,6 +73,7 @@ class SalesInvoiceOut(BaseModel):
     agency_guides: list[DocumentOut]
     signed_delivery_guides: list[DocumentOut]
     payment_vouchers: list[DocumentOut]
+    payment_method: str
     delivery_notes: list[DeliveryNoteOut]
     credit_notes: list[CreditNoteOut]
     photos: list[DocumentOut]
