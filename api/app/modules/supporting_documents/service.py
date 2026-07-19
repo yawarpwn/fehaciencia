@@ -12,7 +12,7 @@ from app.core.utils.helpers import (
 from app.core.utils.thumbnails import generate_thumbnail
 from app.modules.sales_invoices.repository import SaleInvoiceRepository
 from .model import SupportingDocument
-from .schema import SupportingDocumentCreate, SupportingDocumentUpdate
+from .schema import SupportingDocumentUpdate
 from .repository import SupportingDocumentRepository
 
 
@@ -45,9 +45,9 @@ class SupportingDocumentService:
             raise ValidationAppError("No se pudo obtener el nombre del archivo")
 
         # recuperamos la factura
-        invoice = self.invoice_repo.get_by_id(invoice_id)
+        iv = self.invoice_repo.get_by_id(invoice_id)
 
-        if invoice is None:
+        if iv is None:
             raise NotFoundAppError(f"Factura {invoice_id} no encontrada")
 
         extension = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -80,7 +80,7 @@ class SupportingDocumentService:
             thumb_image_name = f"thumbnail_{safe_filename}"
 
             destination_thumb, relative_path_thumb = get_path(
-                invoice.period, invoice.document_id, thumb_image_name
+                iv.period, iv.document_id, thumb_image_name
             )
 
             store_file(
@@ -92,11 +92,9 @@ class SupportingDocumentService:
             thumbnail_path = relative_path_thumb
 
         # guardamos el archivo
-        destination, relative_path = get_path(
-            invoice.period, invoice.document_id, filename
-        )
+        destination, relative_path = get_path(iv.period, iv.document_id, safe_filename)
 
-        store_file(content, destination, filename)
+        store_file(content, destination, safe_filename)
 
         return self.repository.create(
             SupportingDocument(

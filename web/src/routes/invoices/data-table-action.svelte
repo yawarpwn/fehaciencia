@@ -19,7 +19,7 @@
 	}
 </script>
 
-<DocumentDialog {open} {invoice} onClose={closeModal} />
+<DocumentDialog bind:open {invoice} onClose={closeModal} />
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
