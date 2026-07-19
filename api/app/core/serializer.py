@@ -46,7 +46,7 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         is_agency_shipment=is_agency_shipment,
         has_credit_note=has_credit_note,
         has_delivery_note=len(invoice.delivery_notes) > 0,
-        is_advance=invoice.is_advance,
+        is_advance=invoice.is_prepayment,
     )
 
     short_name = (
@@ -68,7 +68,7 @@ def serialize_invoice(invoice: SalesInvoice) -> SalesInvoiceOut:
         customer_name=invoice.customer_name,
         customer_short_name=short_name,
         total_amount=invoice.total_amount,
-        is_advance=invoice.is_advance,
+        is_advance=invoice.is_prepayment,
         issue_date=invoice.issue_date,
         credit_notes=credit_notes,
         purchase_order=by_type.get(DocumentType.PURCHASE_ORDER, [None])[0],

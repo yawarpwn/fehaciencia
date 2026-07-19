@@ -31,12 +31,13 @@ class SalesInvoice(TimestampMixin, table=True):
     customer_name: str
     currency: CurrencyType
     total_amount: float
-    is_advance: bool = Field(default=False)
-    is_credit: bool = Field(default=False)
     pdf_file_path: str | None = None
     xml_file_path: str
     cdr_file_path: str | None = None
     credit_notes: list["CreditNote"] = Relationship(back_populates="invoice")
+    is_prepayment: bool
+    prepayment_reference: str | None
+    payment_method: str
 
     delivery_notes: list["DeliveryNote"] = Relationship(
         back_populates="sales_invoices", link_model=DeliveryNoteReference

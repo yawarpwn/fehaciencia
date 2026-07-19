@@ -91,7 +91,7 @@ class CreditNoteService:
         return self.create(
             CreditNoteCreate(
                 document_id=cn.document_id,
-                invoice_id=cn.discrepancy_reference_id,
+                invoice_id=invoice.id,
                 issue_date=cn.issue_date,
                 xml_file_path=file_path,
                 discrepancy_response_code=cn.discrepancy_response_code,

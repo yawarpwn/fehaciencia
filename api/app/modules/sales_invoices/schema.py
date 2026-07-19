@@ -27,12 +27,13 @@ class SalesInvoiceBase(BaseModel):
     customer_name: str
     currency: CurrencyType
     total_amount: float
-    is_advance: bool = False
     is_credit: bool = False
     pdf_file_path: str | None = None
     xml_file_path: str
     cdr_file_path: str | None = None
-    is_advance: bool = False
+    is_prepayment: bool
+    prepayment_reference: str | None
+    payment_method: str
 
 
 class SalesInvoiceCreate(SalesInvoiceBase):

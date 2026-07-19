@@ -20,8 +20,8 @@ NS = {
 }
 
 
-def get_text(root: ET.Element, tag: str) -> str | None:
-    node = root.find(tag, NS)
+def get_text(root: ET.Element, path: str) -> str | None:
+    node = root.find(path, NS)
     return node.text.strip() if node is not None and node.text else None
 
 
@@ -29,9 +29,9 @@ def find_all(root: ET.Element, xpath: str) -> list[str]:
     return [n.text.strip() for n in root.findall(xpath, NS) if n is not None and n.text]
 
 
-def is_prepayment_invoice(root: ET.Element) -> bool:
-    invoice_type = root.find("cbc:InvoiceTypeCode", NS)
-    return invoice_type is not None and invoice_type.get("listID") in {"0104", "0204"}
+# def is_prepayment_invoice(root: ET.Element) -> bool:
+#     invoice_type = root.find("cbc:InvoiceTypeCode", NS)
+#     return invoice_type is not None and invoice_type.get("listID") in {"0104", "0204"}
 
 
 def generate_unique_filename(original_name: str, doc_type: DocumentType) -> str:
@@ -78,6 +78,9 @@ class InvoiceData:
     customer_ruc: str
     currency: CurrencyType
     total_amount: float
+    is_prepayment_invoice: bool
+    prepayment_reference_invoice: str | None
+    payment_method: str
 
 
 @dataclass
@@ -87,9 +90,62 @@ class InvoiceFile:
     data: InvoiceData
 
 
+# def is_prepayment_invoice(root) -> bool:
+#     tipo = root.find(".//cbc:InvoiceTypeCode", NS)
+#     if tipo is not None and tipo.attrib.get("listID", "") in ("0104", "0204"):
+#         return True
+#     for desc in root.findall(".//cac:Item/cbc:Description", NS):
+#         if desc.text and "anticipo" in desc.text.lower():
+#             return True
+#     return False
+
+
+# def is_prepayment_invoice(root) -> bool:
+#     for desc in root.findall("cac:InvoiceLine/cac:Item/cbc:Description", NS):
+#         if desc.text and (
+#             "ANTICIPO" in desc.text.upper() or "PAGO ANTICIPADO" in desc.text.upper()
+#         ):
+#             return True
+#     return False
+#
+#
+# def prepayment_reference_invoice(root) -> str | None:
+#     doc_ref = root.find("cac:AdditionalDocumentReference", NS)
+#     if doc_ref is not None:
+#         tipo = get_text(doc_ref, "cbc:DocumentType")
+#         if tipo and "ANTICIPO" in tipo.upper():
+#             return get_text(doc_ref, "cbc:ID")
+#     return None
+
+
+CODIGOS_TIPO_OPERACION_ANTICIPO = {"0104", "0204"}
+
+
+def is_prepayment_invoice(root):
+    tipo = root.find("cbc:InvoiceTypeCode", NS)
+    if tipo is not None:
+        list_id = tipo.attrib.get("listID", "")
+        if list_id in CODIGOS_TIPO_OPERACION_ANTICIPO:
+            return True
+    return False
+
+
+def prepayment_reference_invoice(root):
+    doc_ref = root.find("cac:AdditionalDocumentReference", NS)
+    if doc_ref is not None:
+        tipo = get_text(doc_ref, "cbc:DocumentType")
+        if tipo and "ANTICIPO" in tipo.upper():
+            return get_text(doc_ref, "cbc:ID")
+    return None
+
+
 def parse_invoice_data(xml_content: bytes) -> InvoiceData:
 
     root = ET.fromstring(xml_content)
+
+    # prepaid = root.find("cac:PrepaidPayment", NS)
+    # if prepaid is not None:
+    #     datos["pago_anticipado"] = _text(prepaid, "cbc:PaidAmount")
 
     mapping = {
         "full_id": "cbc:ID",
@@ -98,13 +154,11 @@ def parse_invoice_data(xml_content: bytes) -> InvoiceData:
         "customer_name": "cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName",
         "currency": "cbc:DocumentCurrencyCode",
         "total_amount": "cac:LegalMonetaryTotal/cbc:PayableAmount",
+        "payment_method": "cac:PaymentTerms/cbc:PaymentMeansID",
+        "is_prepaid": "cbc:PaidAmount",
     }
+
     raw = {key: get_text(root, path) for key, path in mapping.items()}
-
-    missing = [k for k, v in raw.items() if v is None]
-    if missing:
-        raise ValueError(f"Campos obligatorios ausentes en XML: {missing}")
-
     document_id = require(raw["full_id"], "full_id")
     serie, number = document_id.split("-")
     issue_date = require(raw["issue_date"], "issue_date")
@@ -120,6 +174,9 @@ def parse_invoice_data(xml_content: bytes) -> InvoiceData:
         customer_ruc=require(raw["customer_ruc"], "customer_ruc"),
         currency=CurrencyType(raw["currency"]),
         total_amount=float(require(raw["total_amount"], "total_amount")),
+        is_prepayment_invoice=is_prepayment_invoice(root),
+        prepayment_reference_invoice=prepayment_reference_invoice(root),
+        payment_method=require(raw["payment_method"], "payment_method"),
     )
 
 

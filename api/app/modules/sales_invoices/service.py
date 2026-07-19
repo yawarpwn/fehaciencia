@@ -1,6 +1,4 @@
 from sqlmodel import Session
-import shutil
-
 from app.core.errors import (
     NotFoundAppError,
     ResourseAlreadyExistsAppError,
@@ -134,6 +132,9 @@ class SaleInvoiceService:
                 customer_ruc=iv.customer_ruc,
                 sequential_number=iv.sequential_number,
                 total_amount=iv.total_amount,
+                is_prepayment=iv.is_prepayment_invoice,
+                prepayment_reference=iv.prepayment_reference_invoice,
+                payment_method=iv.payment_method,
             )
         )
 
